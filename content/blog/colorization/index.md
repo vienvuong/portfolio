@@ -8,6 +8,9 @@ comments: false
 socialShare: false
 toc: true
 math: true
+cover:
+  src: assets/report/prokudin_gorskii.jpg
+  alt: Colorizing the Prokudin-Gorskii Collection With OpenC
 ---
 
 [Check out this project on my GitHub](https://github.com/vienvuong/colorizing-pg)
