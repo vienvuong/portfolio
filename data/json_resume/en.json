@@ -176,7 +176,8 @@
         "Flask",
         "PostgreSQL",
         "MongoDB",
-        "Git"
+        "Git",
+        "Agile/JIRA"
       ]
     },
     {

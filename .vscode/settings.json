@@ -11,5 +11,8 @@
   },
   "emmet.includeLanguages": {
     "postcss": "css"
+  },
+  "[toml]": {
+    "editor.defaultFormatter": "tamasfe.even-better-toml"
   }
 }

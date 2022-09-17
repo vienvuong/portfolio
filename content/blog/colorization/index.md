@@ -10,14 +10,12 @@ toc: true
 math: true
 cover:
   src: assets/report/prokudin_gorskii.jpg
-  alt: Colorizing the Prokudin-Gorskii Collection With OpenC
+  alt: Colorizing the Prokudin-Gorskii Collection With OpenCV
 ---
 
 [Check out this project on my GitHub](https://github.com/vienvuong/colorizing-pg)
 
 ## Introduction
-
-![Monochromatic Image](assets/report/prokudin_gorskii.jpg)
 
 Sergei Mikhailovich Prokudin-Gorskii (1863-1944) was a photographer who, between the years 1909-1915, traveled the Russian empire and took thousands of photos of everything he saw. He used an early color technology that involved recording three exposures of every scene onto a glass plate using a red, green, and blue filter. Back then, there was no way to print such photos, and they had to be displayed using a special projector. Prokudin-Gorskii left Russia in 1918. His glass plate negatives survived and were purchased by the Library of Congress in 1948. Today, a digitized version of the Prokudin-Gorskii collection is available online.
 

@@ -14,7 +14,9 @@ enableRobotsTXT = true
 
 [imaging]
   # JPEG and WebP image processing quality, defaults to 75%
-  #quality = 75
+  # anchor = 'Smart'
+  # quality = 75
+  # resampleFilter = 'Linear'
 
 [params]
   # dark or light, defaults to light
@@ -52,10 +54,10 @@ enableRobotsTXT = true
   
   # By default, the theme creates resized versions of images ranging from 300 to
   # 700 pixels wide in increments of 100 pixels
-  #[params.imageResize]
-  #  min = 300
-  #  max = 700
-  #  increment = 100
+  # [params.imageResize]
+  #   min = 300
+  #   max = 700
+  #   increment = 100
 
   # Social share links for posts:
   #   - iconSuite: "simple-icon" or "tabler-icon"
