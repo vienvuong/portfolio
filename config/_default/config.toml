@@ -1,6 +1,6 @@
 baseURL = "http://localhost"
-copyright = "Copyright © 2021"
-title = "hugo-theme-gruvbox"
+copyright = "Copyright © 2022"
+title = "Hi, I'm Vien"
 #paginate = 10
 enableRobotsTXT = true
 
@@ -23,12 +23,12 @@ enableRobotsTXT = true
   #themeColor = "blue"
   # soft medium hard, defaults to medium
   #themeContrast = "medium"
-  author = "Michael Schnerring"
-  subtitle = "Theme Demo"
-  description = "A retro-looking Hugo theme inspired by gruvbox. The pastel colors are high contrast, easily distinguishable, pleasing to the eye, and feature light and dark color palettes."
+  author = "Vien Vuong"
+  subtitle = ""
+  description = "My personal blog and portfolio."
 
   [params.logo]
-    text = "gruvbox"
+    text = "vien"
     url = "/"
 
   [params.prism]
@@ -125,8 +125,8 @@ enableRobotsTXT = true
     weight = 20
   [[menu.main]]
     identifier = "cv"
-    name = "CV"
-    url = "/cv"
+    name = "Resume"
+    url = "/resume"
     weight = 30
   [[menu.main]]
     identifier = "about"

@@ -1,157 +1,226 @@
 {
   "$schema": "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json",
   "basics": {
-    "name": "Richard Hendricks",
-    "label": "Programmer",
-    "image": "https://hugo-theme-gruvbox.schnerring.net/richard-hendricks.webp",
-    "email": "richard.hendricks@piedpiper.com",
-    "phone": "(912) 555-4321",
-    "summary": "Richard hails from Tulsa. He has earned degrees from the University of Oklahoma and Stanford. Before starting Pied Piper, he worked for Hooli as a part time software developer. While his work focuses on applied information theory, mostly optimizing lossless compression schema of both the length-limited and adaptive variants, his non-work interests range widely, everything from quantum computing to chaos theory.",
+    "name": "Vien Vuong",
+    "label": "MS in Computer Science @ UIUC",
+    "image": "/myface.jpg",
+    "email": "vienvuong@proton.me",
+    "phone": "(217) 202-1354",
+    "summary": "",
     "location": {
-      "city": "San Francisco"
+      "city": "Champaign, Illinois"
     },
     "profiles": [
       {
         "network": "GitHub",
-        "username": "hugo-theme-gruvbox",
-        "url": "https://github.com/schnerring/hugo-theme-gruvbox"
+        "username": "GitHub",
+        "url": "https://github.com/vienvuong"
       },
       {
-        "network": "GitHub",
-        "username": "hugo-mod-github-readme-stats",
-        "url": "https://github.com/schnerring/hugo-mod-github-readme-stats"
+        "network": "LinkedIn",
+        "username": "LinkedIn",
+        "url": "https://www.linkedin.com/in/vienvuong/"
       },
       {
-        "network": "GitHub",
-        "username": "hugo-mod-json-resume",
-        "url": "https://github.com/schnerring/hugo-mod-json-resume"
-      },
-      {
-        "network": "Twitter",
-        "url": "https://twitter.com/SiliconHBO"
-      },
-      {
-        "network": "fandom",
-        "url": "https://silicon-valley.fandom.com/wiki/Richard_Hendricks"
-      },
-      {
-        "network": "HBO",
-        "url": "https://www.hbo.com/silicon-valley"
-      },
-      {
-        "network": "IMDB",
-        "url": "https://www.imdb.com/title/tt2575988/"
-      },
-      {
-        "network": "Wikipedia",
-        "url": "https://en.wikipedia.org/wiki/List_of_Silicon_Valley_characters#Richard_Hendricks"
+        "network": "Handshake",
+        "username": "Handshake",
+        "url": "https://illinois.joinhandshake.com/stu/users/21644524"
       }
     ]
   },
   "work": [
     {
-      "name": "Pied Piper",
-      "location": "Palo Alto, CA",
-      "description": "Awesome compression company",
-      "position": "CEO/President",
-      "url": "http://piedpiper.com",
-      "startDate": "2013-12-01",
-      "endDate": "2014-12-01",
-      "summary": "Pied Piper is a multi-platform technology based on a proprietary universal compression algorithm that has consistently fielded high Weisman Scores™ that are not merely competitive, but approach the theoretical limit of lossless compression.",
+      "name": "Synchrony Financial",
+      "location": "Champaign, IL",
+      "description": "Financial Services Company",
+      "position": "Credit Modeling Intern",
+      "url": "https://www.synchrony.com/",
+      "startDate": "May 2022",
+      "endDate": "Aug 2022",
+      "summary": "Worked on building the replacement for Synchrony's main credit forecasting engines.",
       "highlights": [
-        "Build an algorithm for artist to detect if their music was violating copy right infringement laws",
-        "Successfully won Techcrunch Disrupt",
-        "Optimized an algorithm that holds the current world record for Weisman Scores"
+        "Engineered a PySpark input file validation pipeline for Synchrony’s new credit risk forecasting engine to prevent failed runs.",
+        "Reduced overall prediction error by 7% by employing Tableau to analyze backtesting data and fine-tune model parameters.",
+        "Led an intern team of 4 to develop a regression model exploring the error propagation of variables in our credit risk formulas.",
+        "Won 1st place in the Synchrony Summer 2022 Hackathon with 200+ participants."
+      ]
+    },
+    {
+      "name": "Panasonic North America",
+      "location": "Champaign, IL",
+      "description": "Industrial Conglomerate",
+      "position": "Full Stack Web Development Intern",
+      "url": "https://www.na.panasonic.com/",
+      "startDate": "Sep 2021",
+      "endDate": "May 2022",
+      "summary": "ML-based predictive maintenance and error notification dashboard for Pick-and-Place machines in PCB assembly lines.",
+      "highlights": [
+        "Developed a real-time error chart handling large amounts of data, 28 nested filters, and multiple languages and timezones.",
+        "Led the charge in refactoring to enforce ISO timestamps  across databases and unified JSON responses from our backend."
       ]
     }
   ],
   "volunteer": [
     {
-      "organization": "CoderDojo",
-      "position": "Teacher",
-      "url": "http://coderdojo.example.com/",
-      "startDate": "2012-01-01",
-      "endDate": "2013-01-01",
-      "summary": "Global movement of free coding clubs for young people.",
-      "highlights": ["Awarded 'Teacher of the Month'"]
+      "organization": "LUDI Computer Networking Community",
+      "position": "Lead Full Stack Developer",
+      "url": "https://ludi.cs.illinois.edu/",
+      "startDate": "Jan 2021",
+      "endDate": "Dec 2021",
+      "summary": "",
+      "highlights": [
+        "Spearheaded a team of 5 in developing a computer-networking resource sharing and discussion web application.",
+        "Engineered a comment section with upvoting using tree-construction and efficient Stale-While-Revalidate fetching pattern.",
+        "Designed a JWT authentication system with email validation, password hashing, and user authorization levels."
+      ]
+    },
+    {
+      "organization": "ALS Microbiology Research Project",
+      "position": "Lead Full Stack Developer",
+      "startDate": "Jul 2021",
+      "endDate": "Dec 2021",
+      "summary": "",
+      "highlights": [
+        "Modeled 200+ protein sequences using AlphaFold 2 protein folding deep learning model.",
+        "Constructed multiple bioinformatics pipelines for genome assembly and RNA sequencing analysis."
+      ]
     }
   ],
   "education": [
     {
-      "institution": "University of Oklahoma",
-      "url": "https://www.ou.edu/",
-      "area": "Information Technology",
-      "studyType": "Bachelor",
-      "startDate": "2011-06-01",
-      "endDate": "2014-01-01",
-      "score": "4.0",
-      "courses": ["DB1101 - Basic SQL", "CS2011 - Java Introduction"]
-    }
-  ],
-  "awards": [
+      "institution": "University of Illinois at Urbana-Champaign",
+      "area": "Computer Science",
+      "studyType": "Master",
+      "startDate": "Aug 2022",
+      "endDate": "Jun 2023",
+      "score": "GPA: 4.0",
+      "courses": [
+        "Teaching Assistant for CS 101 - Intro to Programming",
+        "CS 542 — Statistical Reinforcement Learning",
+        "CS 543 — Computer Vision",
+        "CS 598 — Meta-learning",
+        "ECE 534 — Random Processes",
+        "ECE 544 — Pattern Recognition"
+      ]
+    },
     {
-      "title": "Digital Compression Pioneer Award",
-      "date": "2014-11-01",
-      "awarder": "Techcrunch",
-      "summary": "There is no spoon."
+      "institution": "University of Illinois at Urbana-Champaign",
+      "area": "Computer Science",
+      "studyType": "Bachelor",
+      "startDate": "Aug 2019",
+      "endDate": "Jun 2022",
+      "score": "GPA: 3.72",
+      "courses": [
+        "Course Assistant for CS 225 - Intro to Data Structures and Algorithms",
+        "Course Assistant for CS 411 - Database Systems",
+        "CS 341 — System Programming",
+        "CS 374 — Algorithms and Models of Computation",
+        "CS 411 — Database Systems",
+        "CS 445 — Computational Photography",
+        "CS 446 — Machine Learning",
+        "CS 447 — Natural Language Processing",
+        "CS 450 — Numerical Analysis",
+        "CS 466 — Bioinformatics"
+      ]
     }
   ],
   "publications": [
     {
-      "name": "Video compression for 3d media",
-      "publisher": "Hooli",
-      "releaseDate": "2014-10-01",
-      "url": "http://en.wikipedia.org/wiki/Silicon_Valley_(TV_series)",
-      "summary": "Innovative middle-out compression algorithm that changes the way we store data."
-    }
-  ],
-  "skills": [
-    {
-      "name": "Web Development",
-      "level": "Master",
-      "keywords": ["HTML", "CSS", "Javascript"]
+      "name": "Peering Into Candida albicans Pir Protein Function and Comparative Genomics of the Pir Family",
+      "publisher": "Frontiers in Cellular and Infection Microbiology",
+      "releaseDate": "2022-03-18",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/35372132/"
     },
     {
-      "name": "Compression",
-      "level": "Master",
-      "keywords": ["Mpeg", "MP4", "GIF"]
-    }
-  ],
-  "languages": [
-    {
-      "language": "English",
-      "fluency": "Native speaker"
-    }
-  ],
-  "interests": [
-    {
-      "name": "Wildlife",
-      "keywords": ["Ferrets", "Unicorns"]
-    }
-  ],
-  "references": [
-    {
-      "name": "Erlich Bachman",
-      "reference": "It is my pleasure to recommend Richard, his performance working as a consultant for Main St. Company proved that he will be a valuable addition to any company."
+      "name": "Using Genomics to Shape the Definition of the Agglutinin-Like Sequence (ALS) Family in the Saccharomycetales",
+      "publisher": "Frontiers in Cellular and Infection Microbiology",
+      "releaseDate": "2021-12-14",
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8712946/"
     }
   ],
   "projects": [
     {
-      "name": "Miss Direction",
-      "description": "A mapping engine that misguides you",
+      "name": "Use paint brush to remove objects from image and fill in the mask using the LaMa image inpainting model.",
+      "url": "https://github.com/vienvuong/inpainting",
+      "endDate": "Dec 2021",
       "highlights": [
-        "Won award at AIHacks 2016",
-        "Built by all women team of newbie programmers",
-        "Using modern technologies such as GoogleMaps, Chrome Extension and Javascript"
+        "Automatic image mask creation using MobileNet image segmentation model",
+        "Automatic people detection using ResNet body segmentation model"
       ],
-      "keywords": ["GoogleMaps", "Chrome Extension", "Javascript"],
-      "startDate": "2016-08-24",
-      "endDate": "2016-08-24",
-      "roles": ["Team lead", "Designer"],
-      "entity": "Smoogle",
-      "type": "application"
+      "keywords": [
+        "TypeScript",
+        "React",
+        "Docker",
+        "PyTorch"
+      ],
+      "roles": [
+        "Web App Implementation of “LaMa: Resolution-robust Large Mask Inpainting” (2022)"
+      ]
+    },
+    {
+      "name": "My blog on machine learning and other interesting tidbits.",
+      "url": "https://vienvuong.com/blog",
+      "endDate": "\n",
+      "roles": [
+        "For more personal projects and articles, take a look at..."
+      ]
     }
   ],
+  "skills": [
+    {
+      "name": "Software Development",
+      "level": "Proficient",
+      "keywords": [
+        "React",
+        "NodeJS",
+        "Flask",
+        "PostgreSQL",
+        "MongoDB",
+        "Git"
+      ]
+    },
+    {
+      "name": "Data Science",
+      "level": "Proficient",
+      "keywords": [
+        "Apache Spark",
+        "Apache Hadoop",
+        "Pandas",
+        "Tableau"
+      ]
+    },
+    {
+      "name": "Machine Learning",
+      "level": "Proficient-ish",
+      "keywords": [
+        "PyTorch",
+        "Scikit-learn",
+        "OpenCV"
+      ]
+    },
+    {
+      "name": "Programming Languages",
+      "level": "Proficient",
+      "keywords": [
+        "Python",
+        "Javascript"
+      ]
+    },
+    {
+      "name": "Programming Languages",
+      "level": "Intermediate",
+      "keywords": [
+        "Java",
+        "C++",
+        "C",
+        "Bash",
+        "OCaml"
+      ]
+    }
+  ],
+  "interests": [],
+  "languages": [],
+  "references": [],
   "meta": {
     "canonical": "https://raw.githubusercontent.com/jsonresume/resume-schema/master/resume.json",
     "version": "v1.0.0",
