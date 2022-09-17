@@ -12,6 +12,8 @@ cover:
   alt: Hivemind News
 ---
 
+[Check it out!](https://hivemind-news.netlify.app/)
+
 ## Introduction
 
 I find it annoying to have to log into Hackernews and Reddit separately every morning. So I created an all-in-one news aggregation site for both websites that allows me save my favorite articles.
