@@ -2,17 +2,16 @@
 author: "Vien Vuong"
 title: "LUDI Computer Networking Community"
 date: "2022-01-16"
-description: "LUDI stands for Library for University Distance Instruction. "
+description: "LUDI (Library for University Distance Instruction) aims to create a web service consisting of a user-friendly database of computer networking educational sources to provide an organized space for university educators to discover relevant software tools."
 tags: ["webdev", "project"]
 comments: false
 socialShare: false
 toc: false
-cover:
-  src: ./landing.png
-  alt: LUDI
 ---
 
-[Check it out!](https://ludi.cs.illinois.edu)!
+[**Check it out!**](https://ludi.cs.illinois.edu)!
+
+![LUDI Computer Networking Community](assets/landing.png)
 
 ## Overview
 
@@ -64,14 +63,14 @@ If you have comments, suggestions, or need help, please email us at ludi-help@il
 
 ## Images
 
-![](landing_light.png)
-![](categories.png)
-![](favorites.png)
-![](profile.png)
-![](login.png)
-![](registration.png)
-![](search1.png)
-![](search2.png)
-![](search3.png)
-![](search4.png)
-![](resource.png)
+![Landing Page](assets/landing_light.png)
+![Categories Page](assets/categories.png)
+![Favorites Page](assets/favorites.png)
+![Profile Page](assets/profile.png)
+![Login Page](assets/login.png)
+![Registration Page](assets/registration.png)
+![Search Page 1](assets/search1.png)
+![Search Page 2](assets/search2.png)
+![Search Page 3](assets/search3.png)
+![Search Page 4](assets/search4.png)
+![Resource Page](assets/resource.png)

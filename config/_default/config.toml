@@ -1,6 +1,6 @@
 baseURL = "http://localhost"
 copyright = "Copyright © 2022"
-title = "Hi, I'm Vien"
+title = "Vien Vuong | Data Science & Computer Science"
 #paginate = 10
 enableRobotsTXT = true
 
@@ -142,8 +142,3 @@ enableRobotsTXT = true
     weight = 10
     [languages.en.params.jsonResume]
       present = "present"
-  [languages.de]
-    languageName = "Deutsch"
-    weight = 20
-    [languages.de.params.jsonResume]
-      present = "heute"

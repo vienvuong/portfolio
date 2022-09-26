@@ -7,12 +7,11 @@ tags: ["webdev", "project"]
 comments: false
 socialShare: false
 toc: false
-cover:
-  src: ./hivemind_news.png
-  alt: Hivemind News
 ---
 
-[Check it out!](https://hivemind-news.netlify.app/)
+[**Check it out!**](https://hivemind-news.netlify.app/)
+
+![Hivemind News](assets/hivemind_news.jpg)
 
 ## Introduction
 

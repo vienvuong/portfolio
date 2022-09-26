@@ -1,7 +1,7 @@
 ---
 author: "Vien Vuong"
-title: "Colorizing the Prokudin-Gorskii Collection With OpenCV"
-date: "2022-08-25"
+title: "Colorizing the Prokudin-Gorskii Collection With OpenCV [Ongoing]"
+date: "2022-08-27"
 description: "This project takes the digitized Prokudin-Gorskii glass plate images and automatically produces a color image with as few visual artifacts as possible. To achieve this, I extract the three color channel images, place them on top of each other, and align them so that they form a single RGB color image."
 tags: ["computer-vision", "ml", "project"]
 comments: false
@@ -37,7 +37,7 @@ There is a number of possible metrics that one could use to score how well the i
 
 **SSD (Sum of Squared Differences):**
 
-$$ SSD(\vec{x}, \vec{y}) = \sum_{i}\sum_{j}(\vec{x}\_{i,j} - \vec{y}\_{i,j})^2 $$
+$$ SSD(\vec{x}, \vec{y}) = \sum*{i}\sum*{j}(\vec{x}\_{i,j} - \vec{y}\_{i,j})^2 $$
 
 Note that in our case, the images to be matched do not actually have the same brightness values (they are different color channels), so a cleverer metric might work better. One such possibility is normalized cross-correlation (NCC), which is simply the dot product between the two images normalized to have zero mean and unit norm. NCC has the advantage of being more robust to change in global brightness, but it is also slower than SSD.
 
@@ -93,11 +93,6 @@ Now let's try with our previous result:
 
 ![Good Result 3](assets/report/good_result3.jpg)
 
-### (X, Y) Displacement Vectors
-
-- Green to Blue: \\((69, -64)\\)
-- Red to Blue: \\( (56, -18) \\)
-
 ## Improvement: Use cv2.matchTemplate() to speed up alignment
 
 cv2.matchTemplate() is much faster than our Multiscale Search method and more robust to monochromatic channel images with large discrepencies.
@@ -109,34 +104,34 @@ cv2.matchTemplate() is much faster than our Multiscale Search method and more ro
 
 ## More Results
 
-Green: \\( (21, -23) \\), Red: \\( (36, 19) \\)
+Green: $(21, -23)$, Red: $(36, 19)$
 
 ![Good Result 4](assets/results/01657u.jpg)
 
-Green: \\( (28, -105) \\), Red: \\( (39, -50) \\)
+Green: $(28, -105)$, Red: $(39, -50)$
 
 ![Good Result 5](assets/results/01861a.jpg)
 
-Green: \\( (2, -9) \\), Red: \\( (1, -4) \\)
+Green: $(2, -9)$, Red: $(1, -4)$
 
 ![Good Result 6](assets/results/00125v.jpg)
 
-Green: \\( (11, 0) \\), Red: \\( (11, 7) \\)
+Green: $(11, 0)$, Red: $(11, 7)$
 
 ![Good Result 7](assets/results/00149v.jpg)
 
-Green: \\( (12, -9) \\), Red: \\( (14, -4) \\)
+Green: $(12, -9)$, Red: $(14, -4)$
 
 ![Good Result 8](assets/results/00153v.jpg)
 
-Green: \\( (3, -14) \\), Red: \\( (3, -9) \\)
+Green: $(3, -14)$, Red: $(3, -9)$
 
 ![Good Result 9](assets/results/00351v.jpg)
 
-Green: \\( (4, -14) \\), Red: \\( (3, -8) \\)
+Green: $(4, -14)$, Red: $(3, -8)$
 
 ![Good Result 10](assets/results/00398v.jpg)
 
-Green: \\( (-2, -16) \\), Red: \\( (-4, -10) \\)
+Green: $(-2, -16)$, Red: $(-4, -10)$
 
 ![Good Result 11](assets/results/01112v.jpg)

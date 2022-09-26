@@ -3,7 +3,7 @@ title: "Stuff I Can Do on This Site"
 date: "2021-11-17"
 author: "Vien Vuong"
 description: "A basic overview of syntax and formatting features this site supports. This article goes over basic Markdown and HTML, Hugo video shortcodes, placeholder text, KaTeX math typesetting, emoji support, Prism code formatting, and image rendering optimization."
-tags: ["hugo", "markdown", "html"]
+tags: ["webdev"]
 comments: false
 socialShare: false
 toc: false

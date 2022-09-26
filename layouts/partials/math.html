@@ -17,3 +17,20 @@
   crossorigin="anonymous"
   onload="renderMathInElement(document.body);"
 ></script>
+<script>
+  // https://github.com/KaTeX/KaTeX/blob/main/docs/autorender.md
+  document.addEventListener("DOMContentLoaded", function () {
+    renderMathInElement(document.body, {
+      // • Auto-render specific keys
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false },
+        // { left: "\(", right: "\)", display: false },
+        // { left: "\[", right: "\]", display: true },
+        { left: "\begin{equation}", right: "\end{equation}", display: true },
+        { left: "\begin{align}", right: "\end{align}", display: true },
+      ],
+      throwOnError: false,
+    });
+  });
+</script>
