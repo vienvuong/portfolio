@@ -4,7 +4,7 @@ draft: false
 type: "resume"
 ---
 
-[Download my resume as a PDF](https://drive.google.com/file/d/1ov0FKmpGPFd3ZD4-ZUtqBADq9edbGjTV/view?usp=sharing)
+[**Download my resume as a PDF**](https://drive.google.com/file/d/1ov0FKmpGPFd3ZD4-ZUtqBADq9edbGjTV/view?usp=sharing)
 
 ## Experience
 

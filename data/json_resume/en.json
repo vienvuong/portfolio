@@ -6,7 +6,7 @@
     "image": "/myface.jpg",
     "email": "vienvuong@proton.me",
     "phone": "(217) 202-1354",
-    "summary": "Data scientist in training with background in web development, credit modelling, and machine learning. ",
+    "summary": "Master in CS graduating May 2023. I have experience in web development, credit modelling, and machine learning. Proficient in Apache Spark, Pandas, React, SQL, and MongoDB. Aspiring machine learning scientist specializing in meta-learning and computer vision.",
     "location": {
       "city": "Champaign, Illinois"
     },
@@ -182,11 +182,12 @@
     },
     {
       "name": "Data Science",
-      "level": "Proficient",
+      "level": "Proficient-ish",
       "keywords": [
         "Apache Spark",
         "Apache Hadoop",
         "Pandas",
+        "Matplotlib",
         "Tableau"
       ]
     },
@@ -196,6 +197,7 @@
       "keywords": [
         "PyTorch",
         "Scikit-learn",
+        "NumPy",
         "OpenCV"
       ]
     },

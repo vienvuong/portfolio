@@ -116,24 +116,24 @@ enableRobotsTXT = true
 
 [menu]
   [[menu.main]]
-    identifier = "blog"
-    name = "Blog"
-    url = "/blog"
+    identifier = "about"
+    name = "About"
+    url = "/about"
     weight = 10
-  [[menu.main]]
-    identifier = "projects"
-    name = "Projects"
-    url = "/tags/project"
-    weight = 20
   [[menu.main]]
     identifier = "cv"
     name = "Resume"
     url = "/resume"
+    weight = 20
+  [[menu.main]]
+    identifier = "projects"
+    name = "Projects"
+    url = "/tags/project"
     weight = 30
   [[menu.main]]
-    identifier = "about"
-    name = "About"
-    url = "/about"
+    identifier = "blog"
+    name = "Blog"
+    url = "/blog"
     weight = 40
 
 [languages]
