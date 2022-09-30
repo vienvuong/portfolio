@@ -10,7 +10,7 @@ toc: true
 math: true
 ---
 
-![Probabilistic Machine Learning Cover](assets/probml_cover.jpg)
+<img src="assets/probml_cover.jpg" alt="Probabilistic Machine Learning Cover" style="width: 60%;">
 
 Chapter notes on Kevin Murphy's Probabilistic Machine Learning: An Introduction (2022). Ongoing work so expect constant updates as I continue to read/re-read the chapters.
 

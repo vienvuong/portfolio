@@ -341,3 +341,60 @@ Main contributions:
 3. Use DAGAN to augment standard classifier in low-data regime, demonstrating significant improvements in the generalization performance on all tasks.
 4. The application of DAGAN in the meta-learning space, achieving SOTA in EMNIST and Omniglot and beating all other general meta-learning models.
 5. Efficient 1-shot augmentation of matching networks.
+
+## Data Synthesis
+
+### Dataset distillation (arXiv:1811.10959, 2018)
+
+**Authors:** T. Wang, J.-Y. Zhu, A. Torralba, and A. Efros
+
+Dataset distillation aims to synthesize a small number of data points that will, when used as input data, be able to approximate the model trained on the original dataset. This paper main focuses on computer vision applications, and the synthesized images are called distilled images. The goal here is to "compress" and encode as much data as possible into a few distilled images.
+
+As opposed to conventional wisdom, Dataset Distillation (DD) proves it is possible to train an image classification model with images from synthetic images from outside the manifold.
+
+### Image deformation meta-networks for one-shot learning (CVPR, 2019)
+
+**Authors:** Z. Chen, Y. Fu, Y.-X. Wang, L. Ma, W. Liu, and M. Hebert
+
+### Learning to simulate (ICLR, 2019)
+
+**Authors:** N. Ruiz, S. Schulter, and M. Chandraker
+
+This paper prosposes a RL-based learning method for automatically adjusting the parameters of any (non-differentiable) simulator. Traditional methods mostly attempt to hand-craft parameters or adjust only parts of the parameters. Their objectives focus on mimicking the real data distribution or randomly generating a large volume of data. In contrast, this approach proposes to automatically determine simulation parameters to directly maximize the performance (accuracy) of the main model. This boils down to a bi-level optimization problem where the upper-level task is a meta-learner that learns how to generate data to minimize the validation loss, and the lower-level task is the main task model (MTM) that learns to solve the actual task at hand. To actually optimize this, the paper uses a policy gradient method to optimize the two objectives. A gradient-based optimization is not applicable because the simulator distribution is parameterized by simulator parameters which makes it non-differentiable, and the actual simulation process, e.g. image rendering, is assumed to be non-differentiable. Now, the simulator parameters learned are unconstrained continuous variables, which can be used to parameterize a multivariate Gaussian acting as the simulator.
+
+The simulator performs very well:
+
+1. On the toy experiment on Gaussian mixtures: While the simulator converged on a different distribution than the real GMM, the learned SVM decision boundary still performs very well on the test data.
+2. On the parameterized traffic simulator: The simulated traffic scene is able to generate different types of intersections, with various car models, road layouts, buildings on the sides, and various weather conditions.
+3. On high-level vision tasks: Learning to Simulate (LTS) outperforms random parameter intialization on both the car counting task and the semantic segmentation tasks on real and simulated data.
+
+There is a slight problem with this paper, however. While the experiments conducted are very intuitive, the experimentation could have been more extensive. The problems chosen are great, and the search space is also quite interesting. However, LTS was mainly compared against random simulator parameters, and not any SOTA computer vision model without simulated data. Simulator performance is compared against the distribution of the validation set, which is a big plus. Still, a lack of comparison to other models lessened the impact of this paper.
+
+### Episodic training for domain generalization (ICCV, 2019)
+
+**Authors:** D. Li, J. Zhang, Y. Yang, C. Liu, Y.-Z. Song, and T. Hospedales
+
+### Learning to learn from noisy labeled data (CVPR, 2019)
+
+**Authors:** J. Li, Y. Wong, Q. Zhao, and M. Kankanhalli
+
+### Adversarial attacks on graph neural networks via meta learning (ICLR, 2019)
+
+**Authors:** D. Zügner and S. Günnemann
+
+Graph neural networks have displayed impressive SOTA results in various tasks (e.g., text classification). However, little is known about their robustness. This paper studies the problem of learning a better poisoned graph parameters that can maximize the loss of a graph neural network. The paper finds that by computing the meta-gradient, the authors are able to solve the bilevel problem underlying training-time attacks. As a result, they are able to generate small perturbations in the input data that cause the model not only to perform significantly worse, but also worse than a simple baseline that ignores all relational information.
+
+Previous works on adversarial attacks on GNNs are generally sparse. Dai et al. (2018) consider test-time (evasion) attacks, but not training-time (poisoning) attacks, which this paper addresses. A previous paper by the same authors, Zugner et al. (2018) consider both types of attacks, but their algorithm is suited only to targeted attack on single nodes. This paper will make sure the attack is able to increase misclassification error globally for every node.
+
+The paper proposes multiple approaches to calculating the meta-gradients. The first is to compute the second-order derivatives over the backpropagation step, essentially treating the graph as a hyperparameter to optimize. This approach displays great results. However, second-order derivatives are costly to compute, so the authors also propose approximate methods which are shown to be more efficient. The attack objective here is a bilevel problem:
+
+$$
+\underset{\widehat{G} \in \Phi(G)}{\min} \mathcal{L}_{\text{atk}} (f_{\theta^{*}} (\widehat{G}) \\
+\text{ s.t. } \theta^{*} = \underset{\theta}{\argmin} \mathcal{L_{\text{train}}} (f_{\theta} (\widehat{G}))
+$$
+
+While we are trying to undermine the generalization performance of the GNN, we do not have the validation labels. The paper remediates this problem by trying instead to on misclassification rate on the training set: $\mathcal{L_{\text{atk}}} = -\mathcal{L_{\text{train}}}$
+
+In both cases for meta-gradient computation (direct and approximate), the experimental results on three graph datasets show that the proposed model could improve the misclassification rate of the unlabeled nodes.
+
+For the meta-gradient to be computed, the proposed attack model assumes the graph structure are accessible to the attackers. This is not always true in practice, which might limit the method's applicability. The paper does provide a joint study with the graph features on Citseer, and the impact of the combined attack is comparable but lower than the structure attack. This ablation is insightful, but it still doesn't address the case where the graph structure is not available to the attacker at all. Overall, this paper is very well written and comprehensively considers multiple algorithms to generate the meta-gradients used as the attack vector.
