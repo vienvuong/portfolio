@@ -11,6 +11,9 @@ enableRobotsTXT = true
       # which is useful and required to use Prism plugins, but may be dangerous 
       # if the content isn't trustworthy.
       unsafe = true
+  [markup.tableOfContents]
+    endLevel = 4
+
 
 [imaging]
   # JPEG and WebP image processing quality, defaults to 75%
