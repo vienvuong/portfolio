@@ -1,6 +1,6 @@
 ---
 author: "Vien Vuong"
-title: "A Journey Through Meta-learning [Ongoing]"
+title: "A Deep Dive Into Meta-Learning [Ongoing]"
 date: "2022-09-13"
 description: "Meta-learning in ML is used to improve the results and performance of a learning algorithm by changing some aspects of the learning algorithm based on experiment results. This guide explores almost every sub-domain of meta-learning by summarizing at least 3 seminal papers per sub-domain."
 tags: ["meta-learning", "ml"]
@@ -370,6 +370,8 @@ The simulator performs very well:
 
 There is a slight problem with this paper, however. While the experiments conducted are very intuitive, the experimentation could have been more extensive. The problems chosen are great, and the search space is also quite interesting. However, LTS was mainly compared against random simulator parameters, and not any SOTA computer vision model without simulated data. Simulator performance is compared against the distribution of the validation set, which is a big plus. Still, a lack of comparison to other models lessened the impact of this paper.
 
+## Other Meta-Objectives
+
 ### Episodic training for domain generalization (ICCV, 2019)
 
 **Authors:** D. Li, J. Zhang, Y. Yang, C. Liu, Y.-Z. Song, and T. Hospedales
@@ -398,3 +400,46 @@ While we are trying to undermine the generalization performance of the GNN, we d
 In both cases for meta-gradient computation (direct and approximate), the experimental results on three graph datasets show that the proposed model could improve the misclassification rate of the unlabeled nodes.
 
 For the meta-gradient to be computed, the proposed attack model assumes the graph structure are accessible to the attackers. This is not always true in practice, which might limit the method's applicability. The paper does provide a joint study with the graph features on Citseer, and the impact of the combined attack is comparable but lower than the structure attack. This ablation is insightful, but it still doesn't address the case where the graph structure is not available to the attacker at all. Overall, this paper is very well written and comprehensively considers multiple algorithms to generate the meta-gradients used as the attack vector.
+
+## Meta-Reinforcement Learning
+
+### Learning to reinforcement learn (CogSci, 2017)
+
+**Authors:** J. Wang, Z. Kurth-Nelson, D. Tirumala, H. Soyer, J. Leibo, R. Munos, C. Blundell, D. Kumaran, and M. Botvinick
+
+Recent advances have allowed to attain human-, and sometimes superhuman-level performance in certain complex and large-scale task environments such as Atari and Go. However, overall, RL still lags significantly behind human performance on most tasks because of two main limitations:
+
+1. Deep RL typically requires a massive volume of training data, whereas human learners can attain reasonable performance on any of a wide range of tasks with comparatively little experience.
+2. Deep RL systems typically specialize on one restricted task domain, whereas human learners can flexibly adapt to changing task conditions.
+
+The authors propose a framework to overcome these factors which they call deep meta-reinforcement learning. The concept is to train a recurrent neural network (in this case an LSTM) as a reinforcement learning algorithm (in this case A2/3C), so that the LSTM eventually becomes its own reinforcement learning algorithm.
+
+![L2RL Algorithm](/meta-learning/l2rl-alg.png)
+
+Using an actor-critic with recurrence architecture, they trained the agent on several tasks from the same family of tasks to prove their agent can learn a new task even if the weights are fixed, after a training period.
+
+The agent is trained in three different categories of tasks:
+
+1. Variations of the multi-armed bandit problem. With a distribution $D$ of Markov decision process (MDP), the authors sample a task at the beginning of an episode and the internal states of the agent are reset. The training process then goes on for a certain number of episodes, where a new task is drawn from $D$ at each new episode.
+
+   After training is completed, the agent’s policy is fixed and it is tested over new tasks drawn from $D$ or slight modifications of $D$ to test its generalization capabilities. The authors show that the agent is performing well on new MDPs even when its weights are fixed.
+
+2. A problem where a bandit had one informative arm (with a fixed position) and multiple rewarding-arm including one optimal arm (with varying positions). The informative arm provided no reward but informed the agent as to where the optimal arm was. The above graph shows that the algorithm was able to prefer losing immediate reward for information which then provided optimal reward, as opposed to classic solvers which did not use this arm.
+
+   They also trained the agent to see if it would learn the underlying task structure where needed. To do so, they trained the agent on the MDP above. Without going into details into the experiment, the authors discovered that the agent has the same behavior as a model-based agent, while being model-free, which implies that the agent learned the underlying task structure.
+
+3. Finally, the authors then wanted to see if the agent was able to learn an abstract task representation and give rise to one-shot learning. To do so, they adapted an experiment from a study on animal behavior, where the agent had to do two consecutive steps (see paper for more details).
+
+   Each episode had its own sets of images, and after a couple of episodes, the agent always selected the “target” image after the first try, which indicates that the agent is able to “one-shot-learn” the target image.
+
+   The authors also reported an experiment where, after some training, is able to return to the goal confidently within an episode even with a random starting point. This means that the agent is able to “one-shot-learn” the position of the goal and is generally able to learn how to navigate in a maze, independently of its structure.
+
+The paper marks the beginning of a resurgence of "modern" meta-learning, and it proposes many novel ideas. However, the authors did not try to compare their agent to “classic” feed-forward deep reinforcement-learning agents (except for the reported maze experiment), so we cannot know if the behaviors shown by the LSTM agent are unique to it or general to all deep RL agents.
+
+### RL^ 2: Fast reinforcement learning via slow reinforcement learning (ICLR, 2017)
+
+**Authors:** Y. Duan, J. Schulman, X. Chen, P. Bartlett, I. Sutskever, and P. Abbeel
+
+### Meta-reinforcement learning of structured exploration strategies (NeurIPS, 2018)
+
+**Authors:** A. Gupta, R. Mendonca, Y. Liu, P. Abbeel, and S. Levine

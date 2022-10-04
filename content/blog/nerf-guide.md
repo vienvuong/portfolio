@@ -1,8 +1,8 @@
 ---
 author: "Vien Vuong"
 title: "A Deep Dive Into Neural Radiance Fields (NeRFs) [Ongoing]"
-date: "2022-09-28"
-description: "We will explore and implement (at least) 3 papers that propose "
+date: "2022-09-24"
+description: "A chronicle of the explosive growth of neural radiance fields from 2020-2022. I will attempt to summarize around 50 important NeRF-related papers and outline how they improve upon the original paper."
 tags: ["nerf", "3d", "computer-vision", "ml", "research"]
 comments: false
 socialShare: false
@@ -19,7 +19,7 @@ cover:
 
 <video src="/nerf-guide/nerf-demo.mp4" autoplay="true" controls="false" loop="true"></video>
 
-After causing a big splash in ECCV 2020, the impressive NeRF paper by Mildenhall et al. has kickstarted an explosion in research in the field of neural volume rendering. It is a novel, data-driven approach that provides an efficient synthesis of visually compelling novel scenes from input images or videos.
+After causing a big splash in ECCV 2020, the impressive NeRF paper by Mildenhall et al. has kickstarted an explosion in interest in the field of neural volume rendering. It is a novel, data-driven approach that provides an efficient synthesis of visually compelling novel scenes from input images or videos.
 
 NeRF also allows explicit or implicit control of scene properties such as illumination, camera parameters, pose, geometry, appearance, and semantic structure, which has been impossible with previous photogrammetry or GAN-based approaches.
 
@@ -40,7 +40,7 @@ The full algorithm to compute a neural radiance field is as such:
 2. Optional: Hierarchical volume sampling (HVS) can be used here reduce sampling density in free space and occluded regions to improve sampling efficiency. The overall network architecture is composed of two networks: the "coarse" network (naive stratified sampling) and the "fine" network (informed biased sampling based on output of the "coarse" network). This affects how the loss function is computed.
 3. Optional: Positional encoding (also called gamma encoding) can be used here to lift 5D input coordinates to a higher-dimensional space. The paper shows this can allow the MLP to better represent higher frequency variation in color and geometry. This encoding lifts the input coordinates from 5D to a higher-dimensional space.
 4. The encoded coordinates are now pass into an MLP to produce a color and volume density. The network can be represented as a mapping $F_{\Theta}: (x, d) \rightarrow (c, \sigma)$, where $c = (r, g, b)$ is the emitted color, $\sigma$ is the volume density, $x$ is the 3D spatial location, and $d$ is the unit vector of the camera ray's viewing direction.
-5. These color and volume density values can now be transformed into an image by a fully differentiable volume rendering procedure (and a hierarchical sampling strategy).
+5. These color and volume density values can now be transformed into an image by a fully differentiable volume rendering procedure.
 6. This differentiability allows end-to-end backpropagation from the rendering loss through the fully connected layers (MLP). The model is then optimized to minimize the residual between the synthesized and ground truth observed images.
 
 To encourage viewpoint-free image synthesis, the NeRF restricts the network to predict the volume density $\sigma$ as a function of only the location $x$, while the RGB color $c$ is predicted as a function of both the location $x$ and the viewing direction $d$.
@@ -68,25 +68,62 @@ However, the original implementation of NeRF has various drawbacks, many of whic
 
 #### Fundamentals
 
-##### [Mip-NeRF](https://jonbarron.info/mipnerf/)
+###### [Mip-NeRF](https://jonbarron.info/mipnerf/)
 
 - Address the severe aliasing artifacts from vanilla NeRF by adapting the mip-map idea from graphics and replacing sampling the light field by integrating over conical sections along a the viewing rays.
 
-[MVSNeRF](https://apchenstu.github.io/mvsnerf/) trains a model across many scenes and then renders new views conditioned on only a few posed input views, using intermediate voxelized features that encode the volume to be rendered.
+###### [MVSNeRF](https://apchenstu.github.io/mvsnerf/)
 
-##### [DietNeRF](https://arxiv.org/abs/2104.00677)
+- Trains a model across many scenes and then renders new views conditioned on only a few posed input views, using intermediate voxelized features that encode the volume to be rendered.
+
+###### [DietNeRF](https://arxiv.org/abs/2104.00677)
 
 - Is a very out-of-the box method that supervises the NeRF training process by a semantic loss, created by evaluating arbitrary views using CLIP, so it can learn a NeRF from a single view for arbitrary categories.
 
-[UNISURF](https://arxiv.org/abs/2104.10078) propose to replace the density in NeRF with occupancy, and hierarchical sampling with root-finding, allowing to do both volume and surface rendering for much improved geometry.
+###### [UNISURF](https://arxiv.org/abs/2104.10078)
 
-##### [NerfingMVS](https://weiyithu.github.io/NerfingMVS/)
+- Propose to replace the density in NeRF with occupancy, and hierarchical sampling with root-finding, allowing to do both volume and surface rendering for much improved geometry.
+
+###### [NerfingMVS](https://weiyithu.github.io/NerfingMVS/)
 
 - Use a sparse depth map from an SfM pipeline to train a scene-specific depth network that subsequently guides the adaptive sampling strategy in NeRF.
 
+#### Priors
+
+###### [Learned Initializations for Optimizing Coordinate-Based Neural Representations](https://arxiv.org/abs/2012.02189) (Tancik et al., 2020)
+
+- Optimizing a coordinate-based network, such as NeRF, from randomly initialized weights for each new signal is inefficient.
+- Using meta-learned initial weights enables faster convergence during optimization and can serve as a strong prior over the signal class being modeled, resulting in better generalization when only partial observations of a given signal are available.
+
+![Learned Initializations Overview](/nerf-guide/learned-inits-overview.png)
+
+![Learned Initializations Demo](/nerf-guide/learned-inits-demo.webp)
+
+###### [Dense Depth Priors for NeRF](https://barbararoessle.github.io/dense_depth_priors_nerf/)
+
+- Estimates depth using a depth completion network run on the SfM point cloud in order to constrain NeRF optimization, yielding higher image quality on scenes with sparse input images.
+
+Neural radiance fields (NeRF) encode a scene into a neural representation that enables photo-realistic rendering of novel views. However, a successful reconstruction from RGB images requires a large number of input views taken under static conditions — typically up to a few hundred images for room-size scenes. Our method aims to synthesize novel views of whole rooms from an order of magnitude fewer images. To this end, we leverage dense depth priors in order to constrain the NeRF optimization. First, we take advantage of the sparse depth data that is freely available from the structure from motion (SfM) preprocessing step used to estimate camera poses. Second, we use depth completion to convert these sparse points into dense depth maps and uncertainty estimates, which are used to guide NeRF optimization. Our method enables data-efficient novel view synthesis on challenging indoor scenes, using as few as 18 images for an entire scene.
+
+###### [Depth-supervised NeRF](https://www.cs.cmu.edu/~dsnerf/)
+
+- Also uses a depth completion network on structure-from-motion point clouds to impose a depth-supervised loss for faster training time on fewer views of a given scene.
+
+###### [InfoNeRF](http://cvlab.snu.ac.kr/research/InfoNeRF)
+
+- Penalizes the NeRF overfitting ray densities on scenes with limited input views through ray entropy regularization, resulting in higher quality depth maps when rendering novel views.
+
+###### [RapNeRF](https://arxiv.org/abs/2205.05922)
+
+- Focuses on view-consistency to enable view extrapolation, using two new techniques: random ray casting and a ray atlas. [(pdf)](https://openaccess.thecvf.com/content/CVPR2022/papers/Zhang_Ray_Priors_Through_Reprojection_Improving_Neural_Radiance_Fields_for_Novel_CVPR_2022_paper.pdf)
+
+###### [RegNeRF](https://m-niemeyer.github.io/regnerf/)
+
+- Enables good reconstructions from a view images by renders patches in _unseen_ views and minimizing an appearance and depth smoothness prior there.
+
 #### Performance
 
-##### [Neural Sparse Voxel Fields](https://github.com/facebookresearch/NSVF) (Liu et al., 2020)
+###### [Neural Sparse Voxel Fields](https://github.com/facebookresearch/NSVF) (Liu et al., 2020)
 
 ![NSVF Pipeline](/nerf-guide/nsvf-pipeline.jpg)
 
@@ -97,7 +134,7 @@ However, the original implementation of NeRF has various drawbacks, many of whic
 - 10 times faster than NeRF
 - Applications: scene editing, scene composition, multi-scene learning, free-viewpoint rendering of a moving human, and large-scale scene rendering
 
-##### [NeRF++: Analyzing and Improving Neural Radiance Fields](https://github.com/Kai-46/nerfplusplus) (Zhange et al., 2020)
+###### [NeRF++: Analyzing and Improving Neural Radiance Fields](https://github.com/Kai-46/nerfplusplus) (Zhange et al., 2020)
 
 - Analyzes the shape-radiance ambiguity: from certain viewpoints, NeRF can recover the wrong geometry from the radiance information.
 - NeRF's MLP is quite robust against the shape-radiance ambiguity because of 2 reasons:
@@ -108,13 +145,13 @@ However, the original implementation of NeRF has various drawbacks, many of whic
 
 I am most interested in applications of NeRF in 3D object reconstruction and depth estimation problems.
 
-##### [DeRF: Decomposed Radiance Fields](https://ubc-vision.github.io/derf/) (Rebain et al., 2020)
+###### [DeRF: Decomposed Radiance Fields](https://ubc-vision.github.io/derf/) (Rebain et al., 2020)
 
 - Propose to spatially decompose a scene into “soft Voronoi diagrams” and dedicate smaller networks for each decomposed part to take advantage of accelerator memory architectures.
 - Achieves near-constant inference time regardless of the number of decomposed parts
 - Provides up to 3x more efficient inference than NeRF (with the same rendering quality)
 
-##### [AutoInt: Automatic Integration for Fast Neural Volume Rendering](https://www.computationalimaging.org/publications/automatic-integration/) (Lindell et al., 2020)
+###### [AutoInt: Automatic Integration for Fast Neural Volume Rendering](https://www.computationalimaging.org/publications/automatic-integration/) (Lindell et al., 2020)
 
 - NeRF's volume integrations along the rendered rays during training and inference have high computational and memory requirements
 - Proposes automatic integration to directly learn the volume intergral using implicit neural representation networks
@@ -123,78 +160,74 @@ I am most interested in applications of NeRF in 3D object reconstruction and dep
 
 ![AutoInt Framework](/nerf-guide/autoint-framework.png)
 
-##### [Learned Initializations for Optimizing Coordinate-Based Neural Representations](https://arxiv.org/abs/2012.02189) (Tancik et al., 2020)
-
-- Optimizing a coordinate-based network, such as NeRF, from randomly initialized weights for each new signal is inefficient.
-- Using meta-learned initial weights enables faster convergence during optimization and can serve as a strong prior over the signal class being modeled, resulting in better generalization when only partial observations of a given signal are available.
-
-![Learned Initializations Overview](/nerf-guide/learned-inits-overview.png)
-
-![Learned Initializations Demo](/nerf-guide/learned-inits-demo.webp)
-
-##### [JaxNeRF](https://github.com/google-research/google-research/tree/master/jaxnerf) (GitHub Repo)
+###### [JaxNeRF](https://github.com/google-research/google-research/tree/master/jaxnerf) (GitHub Repo)
 
 - Uses [JAX](https://github.com/google/jax) to dramatically speed up training, from days to hours.
 
-##### [FastNeRF](https://arxiv.org/abs/2103.10380)
+###### [FastNeRF](https://arxiv.org/abs/2103.10380)
 
 - factorizes the NeRF volume rendering equation into two branches that are combined to give the same results as NeRF, but allow for much more efficient caching, yielding a 3000x speed up.
 
-##### [KiloNeRF](https://github.com/creiser/kilonerf)
+###### [KiloNeRF](https://github.com/creiser/kilonerf)
 
 - replaces a single large NeRF-MLP with thousands of tiny MLPs, accelerating rendering by 3 orders of magnitude.
 
-##### [PlenOctrees](https://alexyu.net/plenoctrees/)
+###### [PlenOctrees](https://alexyu.net/plenoctrees/)
 
 - introduce NeRF-SH that uses spherical harmonics to model view-dependent color, and then compresses that into a octree-like data-structure for rendering the result 3000 faster than NeRF.
 
-##### [SNeRG](https://arxiv.org/abs/2103.14645)
+###### [SNeRG](https://arxiv.org/abs/2103.14645)
 
 - precompute and "bake" a NeRF into a new Sparse Neural Radiance Grid (SNeRG) representation, enabling real-time rendering.
 
-##### [RtS](https://arxiv.org/abs/2108.04886)
+###### [RtS](https://arxiv.org/abs/2108.04886)
 
-- focuses on rendering derivatives efficiently and correctly for a variety of surface representations, including NeRF, using a fast "Surface NeRF" or sNerF renderer.
+- Focuses on rendering derivatives efficiently and correctly for a variety of surface representations, including NeRF, using a fast "Surface NeRF" or sNerF renderer.
+
+###### [InstantNGP](https://nvlabs.github.io/instant-ngp/)
+
+###### [DVGO](https://sunset1995.github.io/dvgo/)
+
+###### [Plenoxels](https://alexyu.net/plenoxels/)
 
 #### Dynamic
 
-##### [Nerfies: Deformable Neural Radiance Fields](https://nerfies.github.io/) (Park et al., 2020)
+###### [Nerfies: Deformable Neural Radiance Fields](https://nerfies.github.io/) (Park et al., 2020)
 
 <video src="/nerf-guide/nerfies-demo.mp4" autoplay="true" controls="false" loop="true" ></video>
 
-- We present the first method capable of photorealistically reconstructing a non-rigidly deforming scene using photos/videos captured casually from mobile phones.
+- A casually captured “selfie video” can be turned into free-viewpoint videos, by fitting a deformation field in addition to the usual NeRF density/color representation.
+- Underlying D-NeRF model deformable videos using a second MLP applying a deformation for each frame of the video.
 
-Our approach augments neural radiance fields (NeRF) by optimizing an additional continuous volumetric deformation field that warps each observed point into a canonical 5D NeRF. We observe that these NeRF-like deformation fields are prone to local minima, and propose a coarse-to-fine optimization method for coordinate-based models that allows for more robust optimization. By adapting principles from geometry processing and physical simulation to NeRF-like models, we propose an elastic regularization of the deformation field that further improves robustness.
-
-We show that Nerfies can turn casually captured selfie photos/videos into deformable NeRF models that allow for photorealistic renderings of the subject from arbitrary viewpoints, which we dub "nerfies". We evaluate our method by collecting data using a rig with two mobile phones that take time-synchronized photos, yielding train/validation images of the same pose at different viewpoints. We show that our method faithfully reconstructs non-rigidly deforming scenes and reproduces unseen views with high fidelity.
-
-##### [Space-Time Neural Irradiance Fields for Free-Viewpoint Video](https://video-nerf.github.io/)
+###### [Space-Time Neural Irradiance Fields for Free-Viewpoint Video](https://video-nerf.github.io/)
 
 - Simply use time as an additional input. Carefully selected losses are needed to successfully train this method to render free-viewpoint videos (from RGBD data!).
 
-##### [Neural Scene Flow Fields for Space-Time View Synthesis of Dynamic Scenes](https://www.cs.cornell.edu/~zl548/NSFF/)
+###### [Neural Scene Flow Fields for Space-Time View Synthesis of Dynamic Scenes](https://www.cs.cornell.edu/~zl548/NSFF/)
 
 - Instead train from RGB but use monocular depth predictions as a prior, and regularize by also outputting scene flow, used in the loss.
 
-##### [D-NeRF: Neural Radiance Fields for Dynamic Scenes](https://www.albertpumarola.com/research/D-NeRF/index.html)
+###### [D-NeRF: Neural Radiance Fields for Dynamic Scenes](https://www.albertpumarola.com/research/D-NeRF/index.html)
 
 - Is quite similar to the Nerfies paper and even uses the same acronym, but seems to limit deformations to translations.
 
-##### [NeRFlow: Neural Radiance Flow for 4D View Synthesis and Video Processing](https://yilundu.github.io/nerflow/)
+###### [NeRFlow: Neural Radiance Flow for 4D View Synthesis and Video Processing](https://yilundu.github.io/nerflow/)
 
 - Is the latest dynamic NeRF variant to appear on Arxiv, and also uses a Nerfies style deformation MLP, with a twist: it integrates scene flow across time to obtain the final deformation.
 
-##### [NR-NeRF: Non-Rigid Neural Radiance Fields: Reconstruction and Novel View Synthesis of a Dynamic Scene From Monocular Video](https://vcai.mpi-inf.mpg.de/projects/nonrigid_nerf/)
+###### [NR-NeRF: Non-Rigid Neural Radiance Fields: Reconstruction and Novel View Synthesis of a Dynamic Scene From Monocular Video](https://vcai.mpi-inf.mpg.de/projects/nonrigid_nerf/)
 
 - Also uses a deformation MLP to model non-rigid scenes. It has no reliance on pre-computed scene.
 
-##### [AD-NeRF](https://yudongguo.github.io/ADNeRF/) train a conditional nerf from a short video with audio, concatenating DeepSpeech features and head pose to the input, enabling new audio-driven synthesis as well as editing of the input clip.
+###### [AD-NeRF](https://yudongguo.github.io/ADNeRF/)
 
-##### [DynamicVS](https://free-view-video.github.io) is attacking the very challenging free-viewpoint video synthesis problem, and uses scene-flow prediction along with _many_ regularization results to produce impressive results.
+- Train a conditional nerf from a short video with audio, concatenating DeepSpeech features and head pose to the input, enabling new audio-driven synthesis as well as editing of the input clip.
+
+###### [DynamicVS](https://free-view-video.github.io)
+
+- Is attacking the very challenging free-viewpoint video synthesis problem, and uses scene-flow prediction along with _many_ regularization results to produce impressive results.
 
 - Is attacking the very challenging free-viewpoint video synthesis problem, and uses scene-flow prediction along with many regularization results to produce impressive results.
-
-#### Priors
 
 #### Multi-View
 
@@ -237,6 +270,22 @@ We show that Nerfies can turn casually captured selfie photos/videos into deform
 - Is pretty close to pixelNeRF in setup, but operates in a canonical space rather than in view space.
 
 #### Composition
+
+###### [EditNeRF](http://editnerf.csail.mit.edu/)
+
+- Learns a category-specific conditional NeRF model, inspired by GRAF but with an instance-agnostic branch, and show a variety of strategies to edit both color and shape interactively.
+
+###### [ObjectNeRF](https://zju3dv.github.io/object_nerf/)
+
+- Trains a voxel embedding feeding two pathways: scene and objects. By modifying the voxel embedding the objects can be moved, cloned, or removed.
+
+###### [AutoRF](https://sirwyver.github.io/AutoRF/)
+
+- Learns appearance and shape priors for a given class of objects to enable single-shot reconstruction for novel view synthesis.
+
+###### [PNF](https://abhijitkundu.info/projects/pnf/)
+
+- Fits a separate NeRF to individual object instances, creating a panoptic-radiance field that can render dynamic scenes by composing multiple instance-NeRFs and a single "stuff"-NeRF.
 
 #### Portrait
 

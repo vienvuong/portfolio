@@ -7,9 +7,6 @@ tags: ["text-summarization", "nlp", "ml"]
 comments: false
 socialShare: false
 toc: true
-cover:
-  src: /text-summarization/cover.png
-  alt: Text Summarization
 ---
 
 Summarization is the task of producing a shorter version of one or several documents that that represents the most important or relevant information within the original content. This guide goes over the state-of-the-art text summarization techniques in natural language processing (as of early 2020).

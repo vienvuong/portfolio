@@ -12,7 +12,7 @@ enableRobotsTXT = true
       # if the content isn't trustworthy.
       unsafe = true
   [markup.tableOfContents]
-    endLevel = 4
+    endLevel = 3
 
 
 [imaging]
