@@ -9,14 +9,14 @@
       </aside>
       <hr />
     {{ end }}
-  {{ end }}
-
-  {{ $cv := index $.Site.Data.json_resume $.Site.Language.Lang }}
-  {{ if not .Params.hide_sidebar }}
-    {{ if $cv.basics }}
-      <aside class="bio">
-        {{ partial "json-resume/basics.html" . }}
-      </aside>
+  {{ else }}
+    {{ $cv := index $.Site.Data.json_resume $.Site.Language.Lang }}
+    {{ if not .Params.hide_sidebar }}
+      {{ if $cv.basics }}
+        <aside class="bio">
+          {{ partial "json-resume/basics.html" . }}
+        </aside>
+      {{ end }}
     {{ end }}
   {{ end }}
 </div>

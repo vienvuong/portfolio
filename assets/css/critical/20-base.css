@@ -108,6 +108,25 @@ h3 {
   }
 }
 
+@media print {
+  header,
+  footer {
+    display: none !important;
+  }
+  body,
+  blockquote,
+  code,
+  kbd,
+  pre,
+  th {
+    background-color: #fff0 !important;
+  }
+  * {
+    break-inside: avoid-page !important;
+    /* break-before: always; */
+  }
+}
+
 h4 {
   font-size: 1.5rem;
 }

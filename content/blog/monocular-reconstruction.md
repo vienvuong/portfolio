@@ -3,7 +3,7 @@ author: "Vien Vuong"
 title: "NeRF in Monocular Human Reconstruction [Ongoing]"
 date: "2022-09-29"
 description: ""
-tags: ["nerf", "3d", "computer-vision", "ml", "research"]
+tags: ["nerf", "3d", "computer-vision", "ml", "project"]
 comments: false
 socialShare: false
 toc: true
