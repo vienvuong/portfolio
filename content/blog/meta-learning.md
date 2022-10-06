@@ -443,3 +443,30 @@ The paper marks the beginning of a resurgence of "modern" meta-learning, and it 
 ### Meta-reinforcement learning of structured exploration strategies (NeurIPS, 2018)
 
 **Authors:** A. Gupta, R. Mendonca, Y. Liu, P. Abbeel, and S. Levine
+
+## Semi-supervised Learning & Active Learning & Domain Shift
+
+### Meta-learning for semi-supervised few-shot classification (ICLR, 2018)
+
+**Authors:** M. Ren, E. Triantafillou, S. Ravi, J. Snell, K. Swersky, J. Tenenbaum, H. Larochelle, and R. Zemel
+
+### Learning algorithms for active learning (ICML, 2017)
+
+**Authors:** P. Bachman, A. Sordoni, and A. Trischler
+
+### Cross-domain few-shot classification via learned feature-wise transformation (ICLR, 2020)
+
+**Authors:** H.-Y. Tseng, H.-Y. Lee, J.-B. Huang, and M.-H. Yang
+
+Computer vision benefits from a large amount of data, but high quality labeled data is not always available. This sparks a wave of interest in few-shot classification task, where the model has to recognizes instances from novel tasks with only a few labeled samples per class (support set). Focusing on image classification, existing methods have found success with learning a metric function that approximate the distance between feature embeddings of unlabeled and labeled images. However, these methods don't generalize well because of large feature discrepancy across domains. This paper proposes using a feature-wise transformations to augment input images with affine transforms to simulate various feature distributions. Futhermore, the authors propose a meta-learning approach to automate searching hyperparameters for the feature-wise transformation layer.
+
+The goal of this method is one of domain generalization, i.e., from $N$ seen domains $\{ \mathcal{T}^{\text{seen}}_1, ..., \mathcal{T}^{\text{seen}}_N \}$, learn a metric-based few-shot classification model so that it perform well on unseen domain $\mathcal{T}^{\text{unseen}}$. The core idea of metric-based learning is sample two labeled sets: support set and query set. The feature encoder $E$ then extracts the feature embeddings of the sample images. The metric function $M$ then predicts the categories of query images based on labels of support images, and the feature embeddings of the support and query images. Now, the training objective is to minimize classification error of images in the query set.
+
+A problem arises when the feature space discrepancy between seen and unseen domains is too large. This can cause the metric function $M$ to overfit to the seen domains and fail to generalize to the unseen domains. To address the problem, the authors propose to integrate a feature-wise transformation to augment the intermediate feature activations with affine transformations into the feature encoder $E$. Intuitively, this combined architecture can produce more diverse feature distributions which improve the generalization ability of the metric function $M$.
+
+Now, to learn the hyperparameters of the feature-wise transformation, we split the training set into a pseudo-seen and pseudo-unseen domains. This is a alternating optimization problem:
+
+1. Optimize classification loss to update neural network parameters with the pseudo-seen samples like in metric-based methods.
+2. Optimize generalization loss to update hyperparameters of the feature-wise transformation $f$. Generalization loss is the difference in classification error when feature-wise transformation is turned on and when it's removed.
+
+This paper is one of the pioneering works in the field of few-shot learning. It suggests metric-based models might be overfitting to the training set, and proposes a novel approach that might boost generalizability. Unfortunately, it seems like the learned feature-transform only manages to increase accuracy by an average of 2% across datasets. However, the proposed approach has a lot of potential, and a more sophisticated one-pass bilevel optimization approach might be able to perform much better.
