@@ -8,6 +8,7 @@ comments: false
 socialShare: false
 toc: true
 math: true
+draft: true
 cover:
   src: /nerf-guide/nerf-cover.jpg
   alt: Neural Radiance Fields Cover
