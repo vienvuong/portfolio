@@ -11,7 +11,9 @@ math: true
 draft: false
 ---
 
-This is part of my final project for CS 598: Learning to Learn at UIUC.
+This is part of my final project for CS 543: Computer Vision at UIUC.
+
+Group of 1: Vien Vuong (vienv2)
 
 > <video src="/nerf-guide/nerf-demo.mp4" autoplay="true" controls="false" loop="true"></video> \
 > Source: Mildenhall et al., ECCV 2020
@@ -22,18 +24,32 @@ Recent advances in machine learning has led to increased interest in employing c
 
 - Note: Neural fields are also known as implicit neural representations, neural implicits, or coordinate-based neural networks.
 
-Of the neural field techniques, neural radiance fields (NeRF) is one of the most prominent and well-studied. Since 2020, significant improvements have been made to address limitations in every aspect of the original [NeRF](https://www.matthewtancik.com/nerf) implementation. While subsequent papers have achieved impressive results, little effort has been invested into combining and contrasting these very diverse approaches. This paper focuses on three state-of-the-art papers ([instant-ngp](https://nvlabs.github.io/instant-ngp/), [VQAD](https://nv-tlabs.github.io/vqad/) and [TODO: 2nd paper here](https://to.do/)) that apply computer graphics and meta-learning optimizations to maximize NeRF performance in two aspects:
+Of the neural field techniques, neural radiance fields (NeRF) is one of the most prominent and well-studied. Since 2020, significant improvements have been made to address limitations in every aspect of the original [NeRF](https://www.matthewtancik.com/nerf) implementation. While subsequent papers have achieved impressive results, little effort has been invested into combining and contrasting these very diverse approaches. This paper focuses on three state-of-the-art papers ([instant-ngp](https://nvlabs.github.io/instant-ngp/), [VQAD](https://nv-tlabs.github.io/vqad/) and [MonoSDF](https://to.do/)) that apply computer graphics and meta-learning optimizations to maximize neural volume rendering performance in two aspects:
 
 1. Training and rendering performance
 2. Generalizability
 
-Specifically, our goal is to maximize NeRF's quality, capability, and generalizabilty on few-shot novel view synthesis tasks. We will conduct experiments on datasets **TODO**. We will evaluate synthesis quality and training/rendering time compared to numbers given by other methods. Finally, we will study how generalizable our model is by pre-training on one dataset, and then fine-tuning and testing on a different dataset. We will evaluate the 0-shot, 1-shot, and 5-shot transfer-learning cases.
-
 This paper consists of 2 sections:
 
-- [**Part I**](#part-i-an-overview-of-neural-field-techniques) — Historical overview of progress leading up to instant-NGP, VQAD, and **TODO**. We will identify common trends and components of past methods (different conditioning, representation, forward map, architecture, and manipulation methods), and consolidate discovered knowledge in neural field research.
+- [**Part I**](#part-i-an-overview-of-neural-field-techniques) — Historical overview of progress leading up to Instant-NGP, VQAD, and MonoSDF. We will identify common trends and components of past methods (different conditioning, representation, forward map, architecture, and manipulation methods), and consolidate discovered knowledge in neural field research.
 
-- [**Part II**](#part-ii-fast-semantically-consistent-few-shot-view-synthesis) — Implementation and performance evaluation of **TODO**.
+- [**Part II**](#part-ii-fast-semantically-consistent-few-shot-view-synthesis) — Implementation and performance evaluation of Instant-NGP + VQAD + MonoSDF.
+
+## Goals
+
+### Minimum Goal
+
+NeRF has proven to be highly capable in novel view synthesis, being able to capture fine-grained details from lighting, texture, and shapes. However, the original NeRF implementation takes a significant amount of time and input views to train and render visually compelling novel views. Our goal with this project is to combine state-of-the-art techniques (Instant-NGP and VQAD) to maximize NeRF's quality, capability, and generalizabilty on few-shot novel view synthesis tasks.
+
+We will conduct experiments on datasets [NeRF Synthetic Dataset](#nerf-synthetic-dataset) and [ShapeNetCore](#shapenetcore). We will evaluate novel view synthesis quality and training/rendering time compared to numbers given by other methods (see [Evaluation Metrics](#evaluation-metrics)).
+
+Finally, we will study how generalizable our model is by pre-training on ShapeNetCore dataset, and then fine-tuning and testing on the NeRF dataset (or another [more complex dataset](#complex-datasets)). Specifically, we will consider the 1-shot (monocular), and 5-shot transfer-learning cases.
+
+### Maximum Goal
+
+If possible, we also plan to expand NeRF's performance to 3D reconstruction tasks. While NeRF is able to capture a scene very well, it is unclear how one would extract the 3D geometry. One could argue the volumetric density values NeRF generates are the geometry. However, inferring surfaces from densities proves to be rather non-trivial. Fortunately, there is a better representation for 3D shape called the signed distance function (SDF). Methods have been developed that allow NeRF to simultaneously predict SDF and perform volumetric rendering, while still training end-to-end. MonoSDF combines this approach with 3D geometric priors learned using a meta-learning approach to generate extremely detailed 3D scenes.
+
+As a reach goal, we plan to conduct experiments on 3D reconstruction and object segmentation on the ScanNet dataset. Again, we will consider the 1-shot (monocular), and 5-shot learning cases. We would like to compare our methods with the best occupancy-networks- and voxel-grid-based methods.
 
 ## Part I: An Overview of Neural Field Techniques
 
@@ -100,7 +116,7 @@ NeRF main bottleneck is having to train and query an MLP that maps 5D spatial co
 
 However, even with these optimizations, NeRF still proves to be too slow compared to classical volume rendering methods like voxel grids and multi-plane images (MPIs). It is clear that for the goal of instant training and real-time rendering to be achieved, the MLP itself will have to be modified.
 
-In this section, we will go over six approaches that attempt to speed up NeRF training and/or rendering time. Some papers (instant-NGP and VQAD) also manage to significantly reduce storage size and training time memory overhead. We will discuss methods that propose using some kind of specialized data structure to store the neural representation data and/or replacing the MLP altogether.
+In this section, we will go over six approaches that attempt to speed up NeRF training and/or rendering time. Some papers (Instant-NGP and VQAD) also manage to significantly reduce storage size and training time memory overhead. We will discuss methods that propose using some kind of specialized data structure to store the neural representation data and/or replacing the MLP altogether.
 
 - Coninuous volume representation (same as original NeRF)
 
@@ -113,12 +129,12 @@ In this section, we will go over six approaches that attempt to speed up NeRF tr
   4. Sparse voxel grid without any MLP: [Plenoxels](https://alexyu.net/plenoxels/)
   5. Dense voxel grid with shallow MLP: [DVGO](https://sunset1995.github.io/dvgo/) and [DVGOv2](https://arxiv.org/abs/2206.05085)
   6. Factorized components: [TensoRF](https://apchenstu.github.io/TensoRF/)
-  7. Hash: [instant-ngp](https://nvlabs.github.io/instant-ngp/)
+  7. Hash: [Instant-NGP](https://nvlabs.github.io/instant-ngp/)
   8. Hash: [VQAD](https://nv-tlabs.github.io/vqad/)
 
-Paper 4 (instant-ngp), along with VQAD, will be included in [Section 4: State of the Art](#section-4-state-of-the-art). While VQAD's data structure is much faster compared to instant-ngp, the "instant" neural rendering algorithm remains the same and thus will be included in our implementation in [Part II](#part-ii-fast-semantically-consistent-few-shot-view-synthesis).
+Instant-NGP and VQAD, will be included in [Section 4: State of the Art](#section-4-state-of-the-art). While VQAD's data structure is much faster compared to Instant-NGP, the _instant_ neural rendering algorithm remains the same and thus will be included in our implementation in [Part II](#part-ii-fast-semantically-consistent-few-shot-view-synthesis).
 
-Note that Plenoxels, instant-ngp, and DVGOv2 require custom CUDA kernels, while NGLOD, KiloNeRF, DVGO, and TensoRF achieve their speedup with standard PyTorch implementation. For the sake of simplicity, this paper will use the instant-ngp's and VQAD's official PyTorch implementations available in NVIDIA Kaolin Wisp (see [Method](#method)).
+Note that Plenoxels, Instant-NGP, and DVGOv2 require custom CUDA kernels, while NGLOD, KiloNeRF, DVGO, and TensoRF achieve their speedup with standard PyTorch implementation. For the sake of simplicity, this paper will use the Instant-NGP's and VQAD's official PyTorch implementations available in NVIDIA Kaolin Wisp (see [Method](#method)).
 
 #### [NGLOD](https://nv-tlabs.github.io/nglod/) (Takikawa et al., CVPR 2021)
 
@@ -239,50 +255,54 @@ To generate visually comepelling novel views, we need a suitable prior over 3D s
   2. Regularization fixes geometry, but hurts fine-detail.
 - Uses [pixelNeRF](https://alexyu.net/pixelnerf/) as the main neural network.
 
+#### [VolSDF](https://lioryariv.github.io/volsdf/) (Yariv et al., NeurIPS 2021)
+
+#### [NeuS](https://lingjie0206.github.io/papers/NeuS/) (Wang et al., NeurIPS 2021)
+
 ### Section 4: State of the Art
 
-We consider the three papers instant-ngp, VQAD, and **TODO** "state-of-the-art" in their respective domain. We will go on to combine and implement them in [Part II](#part-ii-fast-semantically-consistent-few-shot-view-synthesis) of this paper. Due to the size and complexity of neural field research, there are many orthogonal methods which we are not able to address, yet can (and should) be considered "state-of-the-art" in their own right. These specific papers are chosen because we believe in the following reasons:
+We consider the three papers Instant-NGP, VQAD, and **TODO** "state-of-the-art" in their respective domain. We will go on to combine and implement them in [Part II](#part-ii-fast-semantically-consistent-few-shot-view-synthesis) of this paper. Due to the size and complexity of neural field research, there are many orthogonal methods which we are not able to address, yet can (and should) be considered "state-of-the-art" in their own right. These specific papers are chosen because we believe in the following reasons:
 
 1. Their features are mutually compatible.
 2. Their combined features optimize generalizability and training/rendering performance for few-shot novel view synthesis.
 3. Individually, they have garnered a considerable amount of attention, which is a good heuristic for long-term development and support.
 
-#### [instant-ngp](https://nvlabs.github.io/instant-ngp/) (Müller et al., SIGGRAPH 2022)
+#### [Instant-NGP](https://nvlabs.github.io/instant-ngp/) (Müller et al., SIGGRAPH 2022)
 
-This paper defines representations parameterized by multi-layer perceptrons (MLP) as neural graphics primitives. instant-ngp implement four neural graphics primitives, being neural radiance fields (NeRF), signed distance functions (SDFs), neural images, and neural volumes. These neural graphics primitives can be costly to train and evaluate.
+This paper defines representations parameterized by multi-layer perceptrons (MLP) as neural graphics primitives. Instant-NGP implement four neural graphics primitives, being neural radiance fields (NeRF), signed distance functions (SDFs), neural images, and neural volumes. These neural graphics primitives can be costly to train and evaluate.
 
-instant-ngp introduces a versatile new input encoding that permits the use of a smaller network without sacrificing quality, thus significantly reducing the number of floating point and memory access operations. In practice, this is a small neural network augmented by a multiresolution hash table of trainable feature vectors whose values are optimized through SGD.
+Instant-NGP introduces a versatile new input encoding that permits the use of a smaller network without sacrificing quality, thus significantly reducing the number of floating point and memory access operations. In practice, this is a small neural network augmented by a multiresolution hash table of trainable feature vectors whose values are optimized through SGD.
 
-The core contribution of instant-ngp comes in the form of its specialized CUDA kernels. The multiresolution structure allows the network to disambiguate hash collisions, making for a simple architecture that is trivial to parallelize on modern GPUs.
+The core contribution of Instant-NGP comes in the form of its specialized CUDA kernels. The multiresolution structure allows the network to disambiguate hash collisions, making for a simple architecture that is trivial to parallelize on modern GPUs.
 
-This allows instant-ngp to achieve real-time instantaneous performance. At 1080p resolution, instant-ngp finishes training in a matter of seconds, and render novel scene in tens of milliseconds. Compared to Plenoxels, one of the fastest model at the time of publish, instant-ngp achieves:
+This allows Instant-NGP to achieve real-time instantaneous performance. At 1080p resolution, Instant-NGP finishes training in a matter of seconds, and render novel scene in tens of milliseconds. Compared to Plenoxels, one of the fastest model at the time of publish, Instant-NGP achieves:
 
 - 4x faster rendering at a much higher resolution (1920x1080 60fps vs 800x800 15fps)
 - Comparable PSNR (see [Evaluation Metrics](#evaluation-metrics)) at 5s of training time compared to Plenoxels at 11 mins.
 - Superior PSNR vs. Plenoxel when trained for 1 min or longer.
 - Superior PSNR vs. mip-NeRF (one of the highest fidelity NeRF) when trained for 5 min or longer. Note that mip-NeRF takes multiple hours to finish training.
 
-This is a massive improvement over Plenoxels, especially considering Plenoxels is submitted merely a month before instant-ngp.
+This is a massive improvement over Plenoxels, especially considering Plenoxels is submitted merely a month before Instant-NGP.
 
-instant-ngp has the best trade-off in terms of training and rendering time, and one of the closest thing we have to real-time interactive neural rendering.
+Instant-NGP has the best trade-off in terms of training and rendering time, and one of the closest thing we have to real-time interactive neural rendering.
 
 > Both videos are in real time. The training is just that quick!
 > <video src="/nerf-guide/ingp-demo1.mp4" autoplay="true" controls="false" loop="true"></video> \
 > <video src="/nerf-guide/ingp-demo2.mp4" autoplay="true" controls="false" loop="true"></video> \
 > Source: Müller et al., SIGGRAPH 2022
 
-instant-ngp is different compared to previously mentioned methods: it is task-agnostic. It is tested to work with four different tasks:
+Instant-NGP is different compared to previously mentioned methods: it is task-agnostic. It is tested to work with four different tasks:
 
 1. Gigapixel: representing a gigapixel image by a neural network.
 2. SDF: learning a signed distance function in 3D space whose zero level-set represents a 2D surface.
 3. Neural radiance caching [(NRC)](https://research.nvidia.com/publication/2021-06_real-time-neural-radiance-caching-path-tracing) [Müller et al., 2021]: employing a neural network that is trained in real-time to cache costly lighting calculations.
 4. [NeRF](https://www.matthewtancik.com/nerf) [Mildenhall et al. 2020]: uses 2D images and their camera poses to reconstruct a volumetric radiance-and-density field that is visualized using ray marching.
 
-instant-ngp uses the same implementation and hyperparameters across all tasks and only vary the hash table size which trades off quality and performance.
+Instant-NGP uses the same implementation and hyperparameters across all tasks and only vary the hash table size which trades off quality and performance.
 
 #### [VQAD](https://nv-tlabs.github.io/vqad/) (Takikawa et al., SIGGRAPH 2022)
 
-#### [TODO: Paper here](https://to.do/)
+#### [MonoSDF](https://to.do/)
 
 ## Part II: Fast Semantically Consistent Few Shot View Synthesis
 
@@ -299,7 +319,7 @@ I will use NVIDIA Kaolin Wisp to implement my enhanced NeRF model.
 > ![Kaolin Wisp](/nerf-guide/kaolin-wisp.jpg) \
 > Source: [NVIDIA Kaolin Wisp](https://github.com/NVIDIAGameWorks/kaolin-wisp)
 
-Kaolin Wisp is a PyTorch library powered by NVIDIA Kaolin Core to work with neural fields (including NeRFs, NGLOD, instant-ngp and VQAD). Kaolin Wisp provides a PyTorch interface to the custom CUDA kernels proposed by [VQAD](https://nv-tlabs.github.io/vqad/). This allows me to implement my version of VQAD entirely in Python and not have to worry about low-level CUDA code.
+Kaolin Wisp is a PyTorch library powered by NVIDIA Kaolin Core to work with neural fields (including NeRFs, NGLOD, Instant-NGP and VQAD). Kaolin Wisp provides a PyTorch interface to the custom CUDA kernels proposed by [VQAD](https://nv-tlabs.github.io/vqad/). This allows me to implement my version of VQAD entirely in Python and not have to worry about low-level CUDA code.
 
 Kaolin Wisp also provides:
 
@@ -308,6 +328,8 @@ Kaolin Wisp also provides:
 3. Debugging visualization tools, interactive rendering and training, logging, and trainer classes.
 
 These features are incredibly useful for building complex neural fields, and will certainly speed up and simplify my prototyping process.
+
+### Reservations
 
 ## Experiments
 
@@ -327,7 +349,7 @@ Introduced by the original NeRF paper, Mildenhall et al., ECCV 2020. This will b
 
 The dataset contains three parts with the first 2 being synthetic renderings of objects called Diffuse Synthetic 360◦ and Realistic Synthetic 360◦ while the third is real images of complex scenes. We will test our model on the second and third parts of the dataset (the first part is too simple).
 
-- Realistic Synthetic 360◦ consists of eight objects of complicated geometry and realistic non-Lambertian materials. Six of them are rendered from viewpoints sampled on the upper hemisphere and the two left are from viewpoints sampled on a full sphere with all of them at 800x800 pixels.
+- Realistic Synthetic 360◦ consists of eight objects of complicated geometry and realistic non-Lambertian materials.
 
   > <video src="/nerf-guide/nerf-demo.mp4" autoplay="true" controls="false" loop="true"></video>
 
@@ -342,7 +364,16 @@ Introduced by ShapeNet: An Information-Rich 3D Model Repository, Chang et al., 2
 > ![ShapeNetCore](/nerf-guide/shapenetcore.png)
 > Source: Chang et al., 2015
 
-ShapeNetCore is a subset of the full ShapeNet dataset with single clean 3D models and manually verified category and alignment annotations. It covers 55 common object categories with about 51,300 unique 3D models. The 12 object categories of PASCAL 3D+, a popular computer vision 3D benchmark dataset, are all covered by ShapeNetCore.
+#### Complex Datasets
+
+These are more complex datasets that can potentially be used to test the ability of our model to infer 3D geometry.
+
+- [ScanNet](http://www.scan-net.org/): realistic indoor scene dataset with 3D camera poses, surface reconstructions, and instance-level semantic segmentations.
+- [Tanks and Temples](https://www.tanksandtemples.org/): realistic indoor and outdoor scenes captured with an industrial laser scanner at very high fidelity.
+
+## Reflection
+
+This is my first time working with neural radiance fields. I have experience working with PyTorch and 2D inapainting tasks, however, 3D computer vision is one of my long-time passion. This project is tangentially related to my Master thesis research, which focuses more on 3D geometry extraction (potentially by) using occupancy networks, as oppsed to novel view synthesis. However, if I observe good results from my experiments in this project, it might steer the direction of my research. Refer to [Goals](#goals) for information on the scope of the project.
 
 ## Sources
 
@@ -385,6 +416,12 @@ ShapeNetCore is a subset of the full ShapeNet dataset with single clean 3D model
 [Real-time Neural Radiance Caching for Path Tracing](https://research.nvidia.com/publication/2021-06_real-time-neural-radiance-caching-path-tracing) (Müller et al., SIGGRAPH 2021)
 
 [ShapeNet: An Information-Rich 3D Model Repository](https://shapenet.org/) (Chang et al., 2015)
+
+[MonoSDF: Exploring Monocular Geometric Cues for Neural Implicit Surface Reconstruction](https://niujinshuchong.github.io/monosdf/) (Yu et al., NeurIPS 2022)
+
+[Volume Rendering of Neural Implicit Surfaces](https://lioryariv.github.io/volsdf/) (Yariv et al., NeurIPS 2021)
+
+[NeuS: Learning Neural Implicit Surfaces by Volume Rendering for Multi-view Reconstruction](https://lingjie0206.github.io/papers/NeuS/) (Wang et al., NeurIPS 2021)
 
 ### Websites
 

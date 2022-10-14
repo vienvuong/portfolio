@@ -470,3 +470,52 @@ Now, to learn the hyperparameters of the feature-wise transformation, we split t
 2. Optimize generalization loss to update hyperparameters of the feature-wise transformation $f$. Generalization loss is the difference in classification error when feature-wise transformation is turned on and when it's removed.
 
 This paper is one of the pioneering works in the field of few-shot learning. It suggests metric-based models might be overfitting to the training set, and proposes a novel approach that might boost generalizability. Unfortunately, it seems like the learned feature-transform only manages to increase accuracy by an average of 2% across datasets. However, the proposed approach has a lot of potential, and a more sophisticated one-pass bilevel optimization approach might be able to perform much better.
+
+## Retrospection: Concept of Learning to Learn
+
+### Evolutionary principles in self-referential learning. On learning how to learn: The meta-meta-... hook. (1987)
+
+**Authors:** J. Schmidhuber
+
+### Using fast weights to deblur old memories (Conference Of The Cognitive Science Society, 1987)
+
+**Authors:** G. E. Hinton and D. C. Plaut
+
+The paper proposes two weights on each connection:
+
+1. A slow-changing, plastic weight for long-term knowledge
+2. A fast-changing, elastic weight for temporary knowledge
+
+
+
+### On the optimization of a synaptic learning rule (Conf. Optimality in Artificial and Biological Neural Networks, 1992)
+
+**Authors:** S. Bengio, Y. Bengio, J. Cloutier, and J. Gecsei
+
+### Learning to control fast-weight memories: An alternative to dynamic recurrent networks (Neural Computation, 1992)
+
+**Authors:** J. Schmidhuber
+
+### Is learning the n-th thing any easier than learning the first? (NeurIPS, 1996)
+
+**Authors:** S. Thrun
+
+### Learning to learn: Introduction and overview (Learning To Learn, 1998)
+
+**Authors:** S. Thrun and L. Pratt
+
+### Learning to learn using gradient descent (International Conference on Artificial Neural Networks, 2001)
+
+**Authors:** S. Hochreiter, A. Younger, and P. Conwell
+
+### Meta-learning with backpropagation (IJCNN, 2001)
+
+**Authors:** A. S. Younger, S. Hochreiter, and P. R. Conwell
+
+### A perspective view and survey of meta-learning (Artificial Intelligence Review, 2002)
+
+**Authors:** R. Vilalta and Y. Drissi
+
+### Meta-learning in reinforcement learning (Neural Networks, 2003)
+
+**Authors:** N. Schweighofer and K. Doya
