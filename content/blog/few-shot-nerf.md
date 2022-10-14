@@ -152,7 +152,7 @@ Note that Plenoxels, Instant-NGP, and DVGOv2 require custom CUDA kernels, while 
   > Source: Takikawa et al., CVPR 2021
 
 - Achieves 2-3 orders of magnitude more efficient in terms of rendering speed compared to previous works ().
-- Produces state-of-the-art reconstruction quality for complex shapes under both 3D geometric and 2D image-space metrics.
+- Produces SOTA reconstruction quality for complex shapes under both 3D geometric and 2D image-space metrics.
 
 #### [FastNeRF](https://arxiv.org/abs/2103.10380) (Garbin et al., ICCV 2021)
 
@@ -261,7 +261,7 @@ To generate visually comepelling novel views, we need a suitable prior over 3D s
 
 ### Section 4: State of the Art
 
-We consider the three papers Instant-NGP, VQAD, and **TODO** "state-of-the-art" in their respective domain. We will go on to combine and implement them in [Part II](#part-ii-fast-semantically-consistent-few-shot-view-synthesis) of this paper. Due to the size and complexity of neural field research, there are many orthogonal methods which we are not able to address, yet can (and should) be considered "state-of-the-art" in their own right. These specific papers are chosen because we believe in the following reasons:
+We consider the three papers Instant-NGP, VQAD, and Mono-SDF, each of which is considered "state-of-the-art" in their respective domain. We will go on to combine and implement them in [Part II](#part-ii-fast-semantically-consistent-few-shot-view-synthesis) of this paper. Due to the size and complexity of neural field research, there are many orthogonal methods which we are not able to address, yet can (and should) be considered "state-of-the-art" in their own right. These specific papers are chosen because we believe in the following reasons:
 
 1. Their features are mutually compatible.
 2. Their combined features optimize generalizability and training/rendering performance for few-shot novel view synthesis.
@@ -269,36 +269,81 @@ We consider the three papers Instant-NGP, VQAD, and **TODO** "state-of-the-art" 
 
 #### [Instant-NGP](https://nvlabs.github.io/instant-ngp/) (Müller et al., SIGGRAPH 2022)
 
-This paper defines representations parameterized by multi-layer perceptrons (MLP) as neural graphics primitives. Instant-NGP implement four neural graphics primitives, being neural radiance fields (NeRF), signed distance functions (SDFs), neural images, and neural volumes. These neural graphics primitives can be costly to train and evaluate.
+- To reduce training and testing time, Instant-NGP proposes a new input encoding that permits the use of a smaller network without sacrificing quality.
+- In practice, this is a small NN augmented by a multiresolution hash table of trainable feature vectors whose values are optimized through SGD.
+- The authors trust the multiresolution structure to be able to disambiguate hash collisions.
+- Also creates a custom fully-fused CUDA kernel that parallelize this process while minimizing wasted bandwidth and compute operations.
+- The commonality in these approaches is an encoding that maps model inputs to higher-dimensional space, which maximizes information extraction and enables smaller, more efficient MLP (NSVF, NGLOD).
+- However, previous approaches rely on heuristics and structural modifications, which can complicate the training process, limit the method to a specific task, or limit performance on GPUs where control flow and pointer chasing is expensive.
+- Instant-NGP addresses these concerns with multiresolution hash encoding configured by 2 values: number of parameters $T$ and the desired finest resolution $N_{\max}$.
+- With the multiresolution hash tables, the paper is able to achieve task-independent adaptivity and efficiency:
+  - Adaptivity: mapping a cascade of grids to corresponding fixed-size arrays of feature vectors. At coarse resolutions, the mapping is 1:1. At fine resolutions, multiple grid points can point to the same array entry. However, this is beneficial, as it causes the colliding training gradients to average, which would be dominated by the largest gradients. This means the hash table automatically prioritizes sparse areas with the most fine scale detail without the need for costly structural updates.
+  - Efficiency: since the array is treated as a hash table, the lookups are $\mathcal{O}(1)$ and do not require control flow. This helps GPUs bypass execution divergence, serial pointer-chasing, and allows for all resolutions to be queried in parallel.
+- Positional encodings with a multiresolution sequence of sine and cosine functions are used in the attention layer of transformers. Now they are adopted by NeRF to encode the spatio-directionally varying light field and volume density in the NeRF algorithm.
+- Key idea: parametric encodings. Arranges additional trainable parameters (beyond weights and biases) in an auxiliary data structure, and interpolates these parameters depending on the input vector $x$.
+  - Trades larger memory footprint for smaller computational cost: instead of optimizing instead every weight in an MLP with backprop, a trilinearly interpolated 3D grid only needs to update 8 grid points per backprop.
+  - Another parametric approach: trains a large auxiliary coordinate encoder neural network (ACORN) to output dense feature grids in the leaf nodes around $x$. Better adaptivity at greater computational cost which can be amortized when sufficiently many inputs $x$ fall into each leaf node.
+- Key idea: sparse parametric encoding. There are several problems with dense grids of trainable features:
+  - It consumes much more memory than NN weights.
+  - It allocates as many features to empty space as it does to near-surface areas.
+  - Multiresolution decomposition can much better model smoothness in natural scenes.
+- NSVF adopts a multi-stage coarse to fine strategy in which regions of the feature grid are progressively refined and culled away as necessary, which requires updating the sparse data structure and complicating the training process.
+- Instant-NGP combines both ideas to reduce waste:
+  - Stores the trainable feature vectors in a compact spatial hash table, whose hyperparameter $T$ can be adjusted to trade number of parameters for reconstruction quality.
+  - Uses multiple separate hash tables indexed at different resolution whose interpolated outputs are concatenated before being passed through the MLP. This results in comparable reconstruction quality to dense grids while using 20x fewer parameters.
+- Do not explicitly handle collisions of the hash functions (probing, bucketing, chaining). Instead, the authors rely on the NN to learn to disambiguate hash collisions itself.
+- The multiresolution hash encoding algorithm is as such:
+  1. For an input coordinate $x$, find surrounding voxels at $L$ resolution levels. Assign indices to the corners by hashing their integer coordinates (for coarse resolutions, this mapping is 1:1 as the corners are merged).
+  2. Look up corresponding $F$-dimensional feature vectors from hash tables $\theta_{l}$.
+  3. Linearly interpolate them based on the relative location of input $x$ within the respective $l$-th voxel.
+  4. Concatenate the results of each level (and auxiliary inputs $\xi$) to produce the encoded MLP input $y$.
+  5. Encoding is trained via backprop through the MLP, the concatenation, the linear interpolation, and then accumulated in the looked-up feature vectors.
+- This encoding lifts model input $x \in \mathbb{R}^{d}$ to MLP input $y \in \mathbb{R}^{LF+E}$ where $L$ is the number of levels, $F$ is the dimension of the feature vector, and $E$ is the dimension of the auxiliary inputs $\xi \in \mathbb{R}^{\xi}$. However, only two encoding parameters out of these have to be tuned: hash table size $T$ and max resolution $N_{\max}$ (since adequate optima can be found for the other hyperparameters).
+  - An example of auxiliary inputs $\xi$ are the view direction and material density and texture. They can be encoded using more efficient methods like one-blob encoding in NRC and spherical harmonics basis in NeRF.
+  - Inputs $x$ are encoded into $y = enc(x; \theta)$, which are inputs to the MLP $m(y; \Phi)$. The model thus not only has trainable weights $\Phi$ but also trainable encoding parameters $\theta$.
+- Hash table size $T$ provides a trade-off between performance, memory, and quality. Higher $T$ result in higher quality and lower performance. Memory footprint scales linearly in $T$, while quality and performance scale sub-linearly (diminishing returns).
+- It seems counter-intuitive that encoding is able to faithfully reconstruct scenes in the presence of hash collisions. However, the authors found that different resolution levels have different strengths that complement each other. Coarse levels observe no collision but are low-resolution, while fine levels can capture small features but suffer from collisions. Luckily, collisions are pseudo-randomly scattered across space, so it is statiscally unlikely for them to occur simultaneously at every level for a given pair of points. Furthermore, hash collisions are equivalent to averaging the gradients of the training samples, which means they tend to favor high visibility and high density surfaces as opposed to empty space. So while hash collision hurts reconstruction quality, the end result is not catastrophic.
+- If inputs $x$ are more concentrated in a small region, finer grid levels will experience fewer collisions and a more accurate function can be learned. The multiresolution hash encoding is able to automatically adapt to the input distribution like tree-based encodings, while not suffering from costly data structure modifications and discrete jumps during training.
+- Instant-NGP keeps the hash tables differentiable through trilinear interpolation, which results in sufficient smoothness and prevents blocky appearance. However, if higher-order smoothness must be guaranteed like in SDFs, an alternative interpolation scheme can be used with a small decrease in quality.
+- NOTE: Instant-NGP uses a modified PCG32 RNG hash function. As a possible improvement, the hash function can be learned instead of hand-crafted, turning the method into a dictionary-learning approach. Two possible avenues are:
 
-Instant-NGP introduces a versatile new input encoding that permits the use of a smaller network without sacrificing quality, thus significantly reducing the number of floating point and memory access operations. In practice, this is a small neural network augmented by a multiresolution hash table of trainable feature vectors whose values are optimized through SGD.
+  1. Continuous formulation of indexing that is amenable to analytic differentiation.
+  2. Evolutionary optimization that efficiently explores the discrete function space.
 
-The core contribution of Instant-NGP comes in the form of its specialized CUDA kernels. The multiresolution structure allows the network to disambiguate hash collisions, making for a simple architecture that is trivial to parallelize on modern GPUs.
+- Instant-NGP is special compared to previously mentioned methods: its multiresolution hash encoding and specialized kernels are task-agnostic! Experiments show near SOTA performance in 4 different tasks at a fraction of the computational cost:
 
-This allows Instant-NGP to achieve real-time instantaneous performance. At 1080p resolution, Instant-NGP finishes training in a matter of seconds, and render novel scene in tens of milliseconds. Compared to Plenoxels, one of the fastest model at the time of publish, Instant-NGP achieves:
+  1. Gigapixel: representing a gigapixel image by a neural network.
+  2. SDF: learning a signed distance function in 3D space whose zero level-set represents a 2D surface.
+  3. Neural radiance caching [(NRC)](https://research.nvidia.com/publication/2021-06_real-time-neural-radiance-caching-path-tracing) [Müller et al., 2021]: employing a neural network that is trained in real-time to cache costly lighting calculations.
+  4. [NeRF](https://www.matthewtancik.com/nerf) [Mildenhall et al. 2020]: uses 2D images and their camera poses to reconstruct a volumetric radiance-and-density field that is visualized using ray marching.
 
-- 4x faster rendering at a much higher resolution (1920x1080 60fps vs 800x800 15fps)
-- Comparable PSNR (see [Evaluation Metrics](#evaluation-metrics)) at 5s of training time compared to Plenoxels at 11 mins.
-- Superior PSNR vs. Plenoxel when trained for 1 min or longer.
-- Superior PSNR vs. mip-NeRF (one of the highest fidelity NeRF) when trained for 5 min or longer. Note that mip-NeRF takes multiple hours to finish training.
+  - Instant-NGP uses the same implementation and hyperparameters across all tasks and only vary the hash table size which trades off quality and performance.
 
-This is a massive improvement over Plenoxels, especially considering Plenoxels is submitted merely a month before Instant-NGP.
+- Some optimizations specific to NeRF:
+  - For the NeRF implementation, the model consists of 2 concatenated MLPs: a density MLP (3D input) which feeds into a color MLP (5D input). The output of the color MLP is an RGB triplet, and its input is the concatenation of:
+    - The 16 output values of the density MLP
+    - The view direction projected onto the first 16 coefficients of the spherical harmonics basis (i.e. up to degree 4). This is a natural frequency encoding over unit vectors.
+  - For ray marching, Instant-NGP also employs an occupancy grid that coarsely marks empty vs. dense space to minimize wasted computation. In large scenes, the occupancy grid can also be cascaded to distribute samples exponentially instead of uniformly along the ray.
+- For NeRF rendering, Instant-NGP achieves more-or-less real-time performance: at 1080p resolution, Instant-NGP finishes training in a matter of seconds, and render novel scene in tens of milliseconds. Compared to Plenoxels, one of the fastest model at the time of publish, Instant-NGP achieves:
+  - 4x faster rendering at a much higher resolution (1920x1080 60fps vs 800x800 15fps)
+  - Comparable PSNR (see [Evaluation Metrics](#evaluation-metrics)) at 5s of training time compared to Plenoxels at 11 mins.
+  - Superior PSNR vs. Plenoxel when trained for 1 min or longer.
+  - Superior PSNR vs. mip-NeRF (one of the highest fidelity NeRF) when trained for 5 min or longer. Note that mip-NeRF takes multiple hours to finish training.
+  - This is a massive improvement over Plenoxels, especially considering Plenoxels is submitted merely a month before Instant-NGP.
+- Again for NeRF rendering, the author conduct an ablation where the entire NN is replaced with a single linear matrix multiplication similar to concurrent direct voxel-based NeRF (DVGO). The results show that quality is significantly compromised compared to the MLP, which is better able to capture specular effects and to resolve hash collisions across the interpolated multiresolution hash tables. The MLP is also shown to be only 15% more expensive than the linear layer, thanks to its small size and efficient implementation.
+- For SDF rendering, Instant-NGP achieves almost identical fidelity against an optimized NGLOD model, which achieves SOTA in both speed and quality. The difference in quality can be attributed to hash collisions in Instant-NGP.
+  - However, Instant-NGP's SDF is defined everywhere within the training volume as opposed to NGLOD, which is only defined within the octree (i.e. close to the surface). This permits the use of certain SDF rendering techniques such as approximate soft shadows.
+  - The results also show that for Instant-NGP, the rendered colors are sensitive to slight changes in the surface normal, resulting in undesired microstructures on the scale of the finest grid resolution (a kind of "overfitting"). Since these artifacts are absent in NGLOD, the authors attribute them to hash collisions. They could potentially be eliminated by filtering hash table lookups or by imposing an additional smoothness prior on the loss.
+- NOTE: In generative settings, parametric input encodings typically arrange their features in a dense grid which can then be populated by a separate generator network such as StyleGAN. There is a problem: the hash encoding adds an additional layer of complexity in that the features are not bijective with a regular grid of points.
 
-Instant-NGP has the best trade-off in terms of training and rendering time, and one of the closest thing we have to real-time interactive neural rendering.
+- Last but not least, one of the most important contributions of Instant-NGP is its fast fully-fused CUDA kernels for the MLP, which allows for massive parallelization.
 
 > Both videos are in real time. The training is just that quick!
 > <video src="/nerf-guide/ingp-demo1.mp4" autoplay="true" controls="false" loop="true"></video> \
 > <video src="/nerf-guide/ingp-demo2.mp4" autoplay="true" controls="false" loop="true"></video> \
 > Source: Müller et al., SIGGRAPH 2022
 
-Instant-NGP is different compared to previously mentioned methods: it is task-agnostic. It is tested to work with four different tasks:
-
-1. Gigapixel: representing a gigapixel image by a neural network.
-2. SDF: learning a signed distance function in 3D space whose zero level-set represents a 2D surface.
-3. Neural radiance caching [(NRC)](https://research.nvidia.com/publication/2021-06_real-time-neural-radiance-caching-path-tracing) [Müller et al., 2021]: employing a neural network that is trained in real-time to cache costly lighting calculations.
-4. [NeRF](https://www.matthewtancik.com/nerf) [Mildenhall et al. 2020]: uses 2D images and their camera poses to reconstruct a volumetric radiance-and-density field that is visualized using ray marching.
-
-Instant-NGP uses the same implementation and hyperparameters across all tasks and only vary the hash table size which trades off quality and performance.
+- In conclusion, Instant-NGP has the best trade-off in terms of training and rendering time, and the closest thing we have to real-time interactive neural rendering.
 
 #### [VQAD](https://nv-tlabs.github.io/vqad/) (Takikawa et al., SIGGRAPH 2022)
 
