@@ -8,13 +8,16 @@ comments: false
 socialShare: false
 toc: true
 math: true
-draft: true
 cover:
   src: /nerf-guide/nerf-cover.jpg
   alt: Neural Radiance Fields Cover
 ---
 
 ## Introduction
+
+Recent advances in machine learning has led to increased interest in employing coordinate-based neural networks as a promising tool for computer graphics for tasks such as view synthesis ([NeRF](https://www.matthewtancik.com/nerf)), radiance caching ([instant-ngp](https://nvlabs.github.io/instant-ngp/)), geometry representations ([DeepSDF](https://arxiv.org/abs/1901.05103)), and more (see survey paper [Neural Fields](https://neuralfields.cs.brown.edu/)). These methods, now called neural fields, approximate continuous 3D space with a countinuous, parametric function. Often, this parametric function is an MLP which takes in coordinates as input and output a vector (such as color or occupancy). Neural fields differ from previous signal representations like pixel images or voxels which are discrete and approximate continuous signals with regularly spaced samples of the signal. Neural fields have sparked an explosion of research interest, which have led to widespread success in problems such as 3D shape and image synthesis, animation of human bodies, 3D reconstruction, and pose estimation.
+
+- Note: Neural fields are also known as implicit neural representations, neural implicits, or coordinate-based neural networks.
 
 ### Neural Radiance Fields (NeRFs)
 
@@ -29,7 +32,7 @@ Arguably, the greatest contribution of the paper is its approach to representing
 - Input: a single contious 5D coordinate (spatial location $(x, y, z)$ and viewing direction $(\theta, \phi)$)
 - Output: volume density and RGB "color" (i.e., view-dependent emitted radiance)
 
-This approach proves to be much more space-efficient and high-fidelity than discrete mesh-based or voxel-based representations.
+This approach proves to be much more space-efficient and high-fidelity than discrete mesh-based, voxel-based, or point-cloud-based representations.
 
 #### Algorithm
 
@@ -67,6 +70,217 @@ However, the original implementation of NeRF has various drawbacks, many of whic
 
 ### Follow-Up Works
 
+#### [Instant-NGP](https://nvlabs.github.io/instant-ngp/) (Müller et al., SIGGRAPH 2022)
+
+TLDR: Using multiresolution hash to significantly reduce training and rendering time.
+
+- To reduce training and testing time, Instant-NGP proposes a new input encoding that permits the use of a smaller network without sacrificing quality.
+- In practice, this is a small NN augmented by a multiresolution hash table of trainable feature vectors whose values are optimized through SGD.
+- The authors trust the multiresolution structure to be able to disambiguate hash collisions.
+- Also creates a custom fully-fused CUDA kernel that parallelize this process while minimizing wasted bandwidth and compute operations.
+- The commonality in these approaches is an encoding that maps model inputs to higher-dimensional space, which maximizes information extraction and enables smaller, more efficient MLP (NSVF, NGLOD).
+- However, previous approaches rely on heuristics and structural modifications, which can complicate the training process, limit the method to a specific task, or limit performance on GPUs where control flow and pointer chasing is expensive.
+- Instant-NGP addresses these concerns with multiresolution hash encoding configured by 2 values: number of parameters $T$ and the desired finest resolution $N_{\max}$.
+- With the multiresolution hash tables, the paper is able to achieve task-independent adaptivity and efficiency:
+  - Adaptivity: mapping a cascade of grids to corresponding fixed-size arrays of feature vectors. At coarse resolutions, the mapping is 1:1. At fine resolutions, multiple grid points can point to the same array entry. However, this is beneficial, as it causes the colliding training gradients to average, which would be dominated by the largest gradients. This means the hash table automatically prioritizes sparse areas with the most fine scale detail without the need for costly structural updates.
+  - Efficiency: since the array is treated as a hash table, the lookups are $\mathcal{O}(1)$ and do not require control flow. This helps GPUs bypass execution divergence, serial pointer-chasing, and allows for all resolutions to be queried in parallel.
+- Positional encodings with a multiresolution sequence of sine and cosine functions are used in the attention layer of transformers. Now they are adopted by NeRF to encode the spatio-directionally varying light field and volume density in the NeRF algorithm.
+- Key idea: parametric encodings. Arranges additional trainable parameters (beyond weights and biases) in an auxiliary data structure, and interpolates these parameters depending on the input vector $x$.
+  - Trades larger memory footprint for smaller computational cost: instead of optimizing instead every weight in an MLP with backprop, a trilinearly interpolated 3D grid only needs to update 8 grid points per backprop.
+  - Another parametric approach: trains a large auxiliary coordinate encoder neural network (ACORN) to output dense feature grids in the leaf nodes around $x$. Better adaptivity at greater computational cost which can be amortized when sufficiently many inputs $x$ fall into each leaf node.
+- Key idea: sparse parametric encoding. There are several problems with dense grids of trainable features:
+  - It consumes much more memory than NN weights.
+  - It allocates as many features to empty space as it does to near-surface areas.
+  - Multiresolution decomposition can much better model smoothness in natural scenes.
+- NSVF adopts a multi-stage coarse to fine strategy in which regions of the feature grid are progressively refined and culled away as necessary, which requires updating the sparse data structure and complicating the training process.
+- Instant-NGP combines both ideas to reduce waste:
+  - Stores the trainable feature vectors in a compact spatial hash table, whose hyperparameter $T$ can be adjusted to trade number of parameters for reconstruction quality.
+  - Uses multiple separate hash tables indexed at different resolution whose interpolated outputs are concatenated before being passed through the MLP. This results in comparable reconstruction quality to dense grids while using 20x fewer parameters.
+- Do not explicitly handle collisions of the hash functions (probing, bucketing, chaining). Instead, the authors rely on the NN to learn to disambiguate hash collisions itself.
+- The multiresolution hash encoding algorithm is as such:
+  1. For an input coordinate $x$, find surrounding voxels at $L$ resolution levels. Assign indices to the corners by hashing their integer coordinates (for coarse resolutions, this mapping is 1:1 as the corners are merged).
+  2. Look up corresponding $F$-dimensional feature vectors from hash tables $\theta_{l}$.
+  3. Linearly interpolate them based on the relative location of input $x$ within the respective $l$-th voxel.
+  4. Concatenate the results of each level (and auxiliary inputs $\xi$) to produce the encoded MLP input $y$.
+  5. Encoding is trained via backprop through the MLP, the concatenation, the linear interpolation, and then accumulated in the looked-up feature vectors.
+- This encoding lifts model input $x \in \mathbb{R}^{d}$ to MLP input $y \in \mathbb{R}^{LF+E}$ where $L$ is the number of levels, $F$ is the dimension of the feature vector, and $E$ is the dimension of the auxiliary inputs $\xi \in \mathbb{R}^{\xi}$. However, only two encoding parameters out of these have to be tuned: hash table size $T$ and max resolution $N_{\max}$ (since adequate optima can be found for the other hyperparameters).
+  - An example of auxiliary inputs $\xi$ are the view direction and material density and texture. They can be encoded using more efficient methods like one-blob encoding in NRC and spherical harmonics basis in NeRF.
+  - Inputs $x$ are encoded into $y = enc(x; \theta)$, which are inputs to the MLP $m(y; \Phi)$. The model thus not only has trainable weights $\Phi$ but also trainable encoding parameters $\theta$.
+- Hash table size $T$ provides a trade-off between performance, memory, and quality. Higher $T$ result in higher quality and lower performance. Memory footprint scales linearly in $T$, while quality and performance scale sub-linearly (diminishing returns).
+- It seems counter-intuitive that encoding is able to faithfully reconstruct scenes in the presence of hash collisions. However, the authors found that different resolution levels have different strengths that complement each other. Coarse levels observe no collision but are low-resolution, while fine levels can capture small features but suffer from collisions. Luckily, collisions are pseudo-randomly scattered across space, so it is statiscally unlikely for them to occur simultaneously at every level for a given pair of points. Furthermore, hash collisions are equivalent to averaging the gradients of the training samples, which means they tend to favor high visibility and high density surfaces as opposed to empty space. So while hash collision hurts reconstruction quality, the end result is not catastrophic.
+- If inputs $x$ are more concentrated in a small region, finer grid levels will experience fewer collisions and a more accurate function can be learned. The multiresolution hash encoding is able to automatically adapt to the input distribution like tree-based encodings, while not suffering from costly data structure modifications and discrete jumps during training.
+- Instant-NGP keeps the hash tables differentiable through trilinear interpolation, which results in sufficient smoothness and prevents blocky appearance. However, if higher-order smoothness must be guaranteed like in SDFs, an alternative interpolation scheme can be used with a small decrease in quality.
+- NOTE: Instant-NGP uses a modified PCG32 RNG hash function. As a possible improvement, the hash function can be learned instead of hand-crafted, turning the method into a dictionary-learning approach. Two possible avenues are:
+
+  1. Continuous formulation of indexing that is amenable to analytic differentiation.
+  2. Evolutionary optimization that efficiently explores the discrete function space.
+
+- Instant-NGP is special compared to previously mentioned methods: its multiresolution hash encoding and specialized kernels are task-agnostic! Experiments show near SOTA performance in 4 different tasks at a fraction of the computational cost:
+
+  1. Gigapixel: representing a gigapixel image by a neural network.
+  2. SDF: learning a signed distance function in 3D space whose zero level-set represents a 2D surface.
+  3. Neural radiance caching [(NRC)](https://research.nvidia.com/publication/2021-06_real-time-neural-radiance-caching-path-tracing) [Müller et al., 2021]: employing a neural network that is trained in real-time to cache costly lighting calculations.
+  4. [NeRF](https://www.matthewtancik.com/nerf) [Mildenhall et al. 2020]: uses 2D images and their camera poses to reconstruct a volumetric radiance-and-density field that is visualized using ray marching.
+
+  - Instant-NGP uses the same implementation and hyperparameters across all tasks and only vary the hash table size which trades off quality and performance.
+
+- Some optimizations specific to NeRF:
+  - For the NeRF implementation, the model consists of 2 concatenated MLPs: a density MLP (3D input) which feeds into a color MLP (5D input). The output of the color MLP is an RGB triplet, and its input is the concatenation of:
+    - The 16 output values of the density MLP
+    - The view direction projected onto the first 16 coefficients of the spherical harmonics basis (i.e. up to degree 4). This is a natural frequency encoding over unit vectors.
+  - For ray marching, Instant-NGP also employs an occupancy grid that coarsely marks empty vs. dense space to minimize wasted computation. In large scenes, the occupancy grid can also be cascaded to distribute samples exponentially instead of uniformly along the ray.
+- For NeRF rendering, Instant-NGP achieves more-or-less real-time performance: at 1080p resolution, Instant-NGP finishes training in a matter of seconds, and render novel scene in tens of milliseconds. Compared to Plenoxels, one of the fastest model at the time of publish, Instant-NGP achieves:
+  - 4x faster rendering at a much higher resolution (1920x1080 60fps vs 800x800 15fps)
+  - Comparable PSNR (see [Evaluation Metrics](#evaluation-metrics)) at 5s of training time compared to Plenoxels at 11 mins.
+  - Superior PSNR vs. Plenoxel when trained for 1 min or longer.
+  - Superior PSNR vs. mip-NeRF (one of the highest fidelity NeRF) when trained for 5 min or longer. Note that mip-NeRF takes multiple hours to finish training.
+  - This is a massive improvement over Plenoxels, especially considering Plenoxels is submitted merely a month before Instant-NGP.
+- Again for NeRF rendering, the author conduct an ablation where the entire NN is replaced with a single linear matrix multiplication similar to concurrent direct voxel-based NeRF (DVGO). The results show that quality is significantly compromised compared to the MLP, which is better able to capture specular effects and to resolve hash collisions across the interpolated multiresolution hash tables. The MLP is also shown to be only 15% more expensive than the linear layer, thanks to its small size and efficient implementation.
+- For SDF rendering, Instant-NGP achieves almost identical fidelity against an optimized NGLOD model, which achieves SOTA in both speed and quality. The difference in quality can be attributed to hash collisions in Instant-NGP.
+  - However, Instant-NGP's SDF is defined everywhere within the training volume as opposed to NGLOD, which is only defined within the octree (i.e. close to the surface). This permits the use of certain SDF rendering techniques such as approximate soft shadows.
+  - The results also show that for Instant-NGP, the rendered colors are sensitive to slight changes in the surface normal, resulting in undesired microstructures on the scale of the finest grid resolution (a kind of "overfitting"). Since these artifacts are absent in NGLOD, the authors attribute them to hash collisions. They could potentially be eliminated by filtering hash table lookups or by imposing an additional smoothness prior on the loss.
+- NOTE: In generative settings, parametric input encodings typically arrange their features in a dense grid which can then be populated by a separate generator network such as StyleGAN. There is a problem: the hash encoding adds an additional layer of complexity in that the features are not bijective with a regular grid of points.
+
+- Last but not least, one of the most important contributions of Instant-NGP is its fast fully-fused CUDA kernels for the MLP, which allows for massive parallelization.
+
+> Both videos are in real time. The training is just that quick!
+> <video src="/nerf-guide/ingp-demo1.mp4" autoplay="true" controls="false" loop="true"></video> \
+> <video src="/nerf-guide/ingp-demo2.mp4" autoplay="true" controls="false" loop="true"></video> \
+> Source: Müller et al., SIGGRAPH 2022
+
+- In conclusion, Instant-NGP has the best trade-off in terms of training and rendering time, and the closest thing we have to real-time interactive neural rendering.
+
+#### [VQAD](https://nv-tlabs.github.io/vqad/) (Takikawa et al., SIGGRAPH 2022)
+
+#### [MonoSDF](https://niujinshuchong.github.io/monosdf/) (Yu et al., NeurIPS 2022)
+
+**TLDR:** Using the monocular geometric priors generated by general-purpose monocular estimators to improve reconstruction quality and optimization time.
+
+- Current neural implicit-based surface reconstruction approaches achieve impressive results for simple scenes. However, they struggle in the presence of few input views and for scene that contain large textureless regions (e.g. a blank wall).
+- A key reason for this is that these model are optimized using a per-pixel RGB reconstruction loss. Using only RGB images as input leads to an underconstrained problem as there are countless photo-consistent ways you could inpaint the sparsely sampled regions.
+- This paper proposes using monocular geometric cues such as depths and normals, which can be computed efficiently, to aid in neural implicit surface reconstruction methods. As such, the estimated depths and normals of each image are used as additional supervision signal during optimization together with the RGB image reconstruction loss.
+
+> ![MonoSDF](/nerf-guide/monosdf-framework.png) \
+> Source: Yu et al., NeurIPS 2022
+
+- Photometric consistency used by surface reconstruction methods and recognition cues used by monocular networks are complementary. Photoconsistency works better for textured regions and fine details, while recognition cues, such as surface normals and relative depth cues, excel in large textureless regions like walls.
+
+- The paper also conducts extensive experiments on SOTA coordinate-based neural representations in the context of implicit surface reconstruction.
+  - MLPs act globally and exhibit an inductive smoothness bias while being computationally expensive to optimize and evaluate.
+  - Grid-based representations benefit from locality during training and rendering, hence computationally more efficient. However, reconstructions are noisier for sparse views or less-observed areas.
+- Including monocular geometric priors improves implicit reconstruction across the board while exhibiting very fast convergence.
+
+- Signed distance function (SDF) is a continuous function that for any given 3D point, returns the point's distance to the closest surface.
+- There are multiple ways we could represent SDF:
+  - Explicit as a dense grid of learnable SDF values. Use interpolation to query the SDF value $\hat{s}$ for an arbitrary point $x$ from the dense SDF grid $\mathcal{G}\_{\theta}$.
+    $$\hat{s} = \text{interp}(x, \mathcal{G}\_{\theta})$$
+  - Implicit as a single MLP. SDF values are the outputs of the MLP $f\_{\theta}$ where $\gamma(x)$ is the positional encoding of $x$.
+    $$\hat{s} = f\_{\theta}(\gamma(x))$$
+  - Hybrid using a (feature-conditioned) MLP decoder in combination with single- or multi-resolution feature grids.
+    - Single-resolution: Each cell of the grid stores a feature vector instead of directly storing SDF values. The input to the MLP $f\_{\theta}$ is the interpolated local feature vector from the 3D feature grid $\Phi\_{\theta}$.
+      $$\hat{s} = f\_{\theta}(\gamma(x), \text{interp}(x, \Phi\_{\theta}))$$
+    - Multi-resolution: Multiple feature grids $\lbrace \Phi\_{\theta}^{l} \rbrace \_{l=1}^{L}$ for multiple resolutions $R\_{l}$. The resolutions are sampled in geometric space to combine feature at different frequencies. The input to the MLP is the concatenated value of all the interpolated feature vectors at every resolution. As the number of grid cells grow cubically, one can use a spatial hash function to index the feature vector at finer levels (see [Instant-NGP](#instant-ngp-müller-et-al-siggraph-2022)).
+      $$\hat{s} = f\_{\theta}(\gamma(x), \lbrace \text{interp}(x, \Phi\_{\theta}^{l}) \rbrace \_{l})$$
+- In addition to 3D geometry (SDF), one can also predict the color values optimized with reconstruction loss. We define a second function:
+  $$\hat{c} = c\_{\theta}(x, v, \hat{n}, \hat{z})$$
+  - $c_{\theta}$ is parameterized with a two-layer MLP with network weights $\theta$
+  - If same as NeRF, the MLP takes in a 5D coordinate consisting of the 3D location $x$ and the camera viewing direction $v$ (two angles).
+  - In addition, the MLP can also takes in the 3D unit normal $\hat{n}$ (analytical gradient of SDF function), and the feature vector $\hat{z}$.
+    - If SDF parameterized with an MLP: $\hat{z}$ is the output of a second linear head of the SDF network.
+    - If SDF parameterized with a dense feature grid: $\hat{z}$ is the interpolated vector from the grid.
+- Our goal here is to unify volume rendering (NeRF) with monocular geometric priors to improve implicit surface generation. We expect the 2 types of geometric priors, depth and normal, to complement each other.
+  - Monocular Depth Cues: Obtained with monocular depth predictor pretrained on the Omnidata dataset. This model predict a depth map $\bar{D}$ for each input RGB image.
+    - Absolute scale is difficult to estimate, so $\bar{D}$ must be considered as a relative cue.
+    - This relative depth information is provided over larger distances in the image.
+  - Monocular Normal Cues: Same pretrained Omnidata model predicting a normal map $\bar{N}$ for each RGB image.
+    - Unlike depth cues that provide semi-local relative information, normal cues are local and capture geometric detail.
+
+#### [NGLOD](https://nv-tlabs.github.io/nglod/) (Takikawa et al., CVPR 2021)
+
+- Neural signed distance functions (SDFs) are an alternative type of neural implicit representation of 3D scenes to NeRF. SDFs encode 3D surfaces with a function of position that returns the closest distance to a surface.
+
+  > Neural SDFs \
+  > ![Signed Distance Functions](/nerf-guide/nglod-sdf.jpg) \
+  > Source: Takikawa et al., CVPR 2021
+
+- Just like NeRF, SDFs have the same bottleneck where the MLP has to queried millions of times to render images.
+- NGLOD proposes representing implicit surfaces using an octree-based feature volume which adaptively fits shapes with multiple discrete levels of detail (LODs), and multiple continuous LOD with SDF interpolation.
+- Develops an efficient algorithm to directly render our novel neural SDF representation in real-time by querying only the necessary LODs with sparse octree traversal.
+
+  > ![NGLOD](/nerf-guide/nglod-framework.jpg) \
+  > Source: Takikawa et al., CVPR 2021
+
+- Achieves 2-3 orders of magnitude more efficient in terms of rendering speed compared to previous works ().
+- Produces SOTA reconstruction quality for complex shapes under both 3D geometric and 2D image-space metrics.
+
+#### [FastNeRF](https://arxiv.org/abs/2103.10380) (Garbin et al., ICCV 2021)
+
+- The first NeRF-based system capable of rendering high fidelity photorealistic images at 200fps on a high-end consumer GPU.
+- Proposes factorizing NeRF into two neural networks to maximize caching:
+
+  1. A position-dependent network that produces a deep radiance map
+  2. A direction-dependent network that produces weights
+
+  > ![FastNeRF](/nerf-guide/fastnerf-framework.png) \
+  > Source: Garbin et al., ICCV 2021
+
+- The inner product of the weights and the deep radiance map estimates the color in the scene at the specified position and as seen from the specified direction.
+- Graphics-inspired factorization to allow for:
+
+  1. Compactly caching a deep radiance map at each position in space.
+  2. Efficiently querying that map using ray directions to estimate the pixel values in the rendered image.
+
+- Achieves 3000 times faster rendering time compared to the original NeRF, and at least an order of magnitude faster than existing work on accelerating NeRF.
+
+#### [KiloNeRF](https://nvlabs.github.io/instant-ngp/) (Reiser et al., SIGGRAPH 2022)
+
+- Proposes utilizing thousands of tiny MLPs instead of one single large MLP.
+
+  > ![FastNeRF](/nerf-guide/kilonerf-framework.png) \
+  > Source: Reiser et al., SIGGRAPH 2022
+
+- Each individual MLP only needs to represent parts of the scene, thus smaller and faster-to-evaluate MLPs can be used.
+- Achieves three orders of magnitude in rendering time speedup compared to the original NeRF model.
+- Further, using teacher-student distillation for training, we show that this speedup can be achieved without sacrificing visual quality.
+
+#### [Plenoxels](https://alexyu.net/plenoxels/) (Yu et al., CVPR 2022)
+
+- Plenoxels proposes to replace the NeRF MLP with a sparse voxel ("plenoxel") grid with density and spherical harmonic coefficients at each voxel.
+
+  > ![Plenoxels Framework](/nerf-guide/plenoxels-framework.png) \
+  > Source: Yu et al., CVPR 2022
+
+- To render a ray, we compute the color and density via trilinear interpolation of the neighboring voxel coefficients. Then we integrate to render, and optimize using the standard MSE reconstruction loss relative to the training images, along with a total variation regularizer.
+
+- Achieves >100x training time speedup. And while not optimized for fast rendering, Plenoxels can generate views at 15fps (>450x rendering time speedup).
+
+  > ![Plenoxels Speed](/nerf-guide/plenoxels-speed.png) \
+  > Source: Yu et al., CVPR 2022
+
+- Key take-aways:
+  - The key component in NeRF is the differentiable volumetric rendering, not the neural network.
+  - Trilinear interpolation is key to achieve high resolution and better convergence (vs. nearest neighbor).
+  - Regularization is important to prevent artifacts.
+
+#### [DVGO](https://sunset1995.github.io/dvgo/) (Sun et al., CVPR 2022)
+
+- Proposes representation consisting of a density voxel grid for scene geometry and a feature voxel grid with a shallow network for complex view-dependent appearance.
+- Modeling with explicit and discretized volume representations is not new, but we propose two simple yet non-trivial techniques that contribute to fast convergence speed and high-quality output.
+- First, we introduce the post-activation interpolation on voxel density, which is capable of producing sharp surfaces in lower grid resolution.
+- Second, direct voxel density optimization is prone to suboptimal geometry solutions, so we robustify the optimization process by imposing several priors.
+- Finally, evaluation on five inward-facing benchmarks shows that our method matches, if not surpasses, NeRF’s quality, yet it only takes about 15 minutes to train from scratch for a new scene.
+
+> ![DVGO Speed](/nerf-guide/dvgo-speed.png) \
+> Source: Sun et al., CVPR 2022
+
+#### [DVGOv2](https://arxiv.org/abs/2206.05085) (Sun et al., 2022)
+
+#### [TensoRF](https://apchenstu.github.io/TensoRF/) (Chen et al., ECCV 2022)
+
+#### [VolSDF](https://lioryariv.github.io/volsdf/) (Yariv et al., NeurIPS 2021)
+
+#### [NeuS](https://lingjie0206.github.io/papers/NeuS/) (Wang et al., NeurIPS 2021)
+
 #### Fundamentals
 
 ###### [Mip-NeRF](https://jonbarron.info/mipnerf/)
@@ -77,9 +291,22 @@ However, the original implementation of NeRF has various drawbacks, many of whic
 
 - Trains a model across many scenes and then renders new views conditioned on only a few posed input views, using intermediate voxelized features that encode the volume to be rendered.
 
-###### [DietNeRF](https://arxiv.org/abs/2104.00677)
+#### [pixelNeRF](https://alexyu.net/pixelnerf/) (Yu et al., CVPR 2021)
 
-- Is a very out-of-the box method that supervises the NeRF training process by a semantic loss, created by evaluating arbitrary views using CLIP, so it can learn a NeRF from a single view for arbitrary categories.
+- Conditions a NeRF on image inputs in a fully convolutional manner.
+- Allows the network to be trained across multiple scenes to learn a scene prior, enabling it to perform novel view synthesis in a feed-forward manner from a sparse set of views (as few as one).
+- Every 5D spatial coordinate $(x, d)$ is combined with a corresponding image feature extracted from the feature volume $W$ via projection and interpolation. This combined feature is the input to the main NeRF MLP.
+
+  > ![pixelNeRF Framework](/nerf-guide/pixelnerf-framework.png) \
+  > Source: Yu et al., CVPR 2021
+
+#### [DietNeRF](https://ajayj.com/dietnerf/) (Jain et al., ICCV 2021)
+
+- To improve generalizability in few-shot context, DietNeRF employs a pre-trained image encoder and a "semantic consistency loss" $\mathcal{L}_{SC}$ to guide the optimization process.
+- Seeks to address two major problems with NeRF:
+  1. NeRF tends to overfit on training views.
+  2. Regularization fixes geometry, but hurts fine-detail.
+- Uses [pixelNeRF](https://alexyu.net/pixelnerf/) as the main neural network.
 
 ###### [UNISURF](https://arxiv.org/abs/2104.10078)
 
@@ -167,31 +394,17 @@ I am most interested in applications of NeRF in 3D object reconstruction and dep
 
 ###### [FastNeRF](https://arxiv.org/abs/2103.10380)
 
-- factorizes the NeRF volume rendering equation into two branches that are combined to give the same results as NeRF, but allow for much more efficient caching, yielding a 3000x speed up.
-
-###### [KiloNeRF](https://github.com/creiser/kilonerf)
-
-- replaces a single large NeRF-MLP with thousands of tiny MLPs, accelerating rendering by 3 orders of magnitude.
-
-###### [PlenOctrees](https://alexyu.net/plenoctrees/)
-
-- introduce NeRF-SH that uses spherical harmonics to model view-dependent color, and then compresses that into a octree-like data-structure for rendering the result 3000 faster than NeRF.
+- Factorizes the NeRF volume rendering equation into two branches that are combined to give the same results as NeRF, but allow for much more efficient caching, yielding a 3000x speed up.
 
 ###### [SNeRG](https://arxiv.org/abs/2103.14645)
 
-- precompute and "bake" a NeRF into a new Sparse Neural Radiance Grid (SNeRG) representation, enabling real-time rendering.
+- Precompute and "bake" a NeRF into a new Sparse Neural Radiance Grid (SNeRG) representation, enabling real-time rendering.
 
 ###### [RtS](https://arxiv.org/abs/2108.04886)
 
 - Focuses on rendering derivatives efficiently and correctly for a variety of surface representations, including NeRF, using a fast "Surface NeRF" or sNerF renderer.
 
-###### [InstantNGP](https://nvlabs.github.io/instant-ngp/)
-
-###### [DVGO](https://sunset1995.github.io/dvgo/)
-
-###### [Plenoxels](https://alexyu.net/plenoxels/)
-
-#### Dynamic
+<!-- #### Dynamic
 
 ###### [Nerfies: Deformable Neural Radiance Fields](https://nerfies.github.io/) (Park et al., 2020)
 
@@ -336,58 +549,65 @@ I am most interested in applications of NeRF in 3D object reconstruction and dep
 
 [CO3D](https://github.com/facebookresearch/co3d) contributes an _amazing_ dataset of annotated object videos, and evaluates 15 methods on single-scene reconstruction and learning 3D object categories, including a new SOTA “NerFormer” model.
 
-Finally, [CryoDRGN2](https://openaccess.thecvf.com/content/ICCV2021/html/Zhong_CryoDRGN2_Ab_Initio_Neural_Reconstruction_of_3D_Protein_Structures_From_ICCV_2021_paper.html) attacks the challenging problem of reconstructing protein structure _and_ pose from a "multiview" set of cryo-EM _density_ images. It is unique among NeRF-style papers as it works in the Fourier domain.
-
-## Method
-
-_TBD_
-
-## Experiments
-
-_TBD_
-
-### Evaluation Metrics
-
-- PSNR (Peak Signal-to-Noise Ratio): higher PSNR, lower MSE. Lower MSE implies less difference between the ground truth image and the rendered image. Thus, higher PSNR, the better model.
-
-- SSIM (Structural Similarity Index): Checks the structural similarity with the ground truth image model. Higher SSIM, the better model.
-
-- LPIPS (Learned Perceptual Image Patch Similarity): Determines the similarity with the view of perception; using VGGNet. Lower LPIPS, the better model.
-
-## Milestones
-
-_TBD_
+Finally, [CryoDRGN2](https://openaccess.thecvf.com/content/ICCV2021/html/Zhong_CryoDRGN2_Ab_Initio_Neural_Reconstruction_of_3D_Protein_Structures_From_ICCV_2021_paper.html) attacks the challenging problem of reconstructing protein structure _and_ pose from a "multiview" set of cryo-EM _density_ images. It is unique among NeRF-style papers as it works in the Fourier domain. -->
 
 ## Sources
 
 **Papers**
 
-[State of the Art on Neural Rendering](https://arxiv.org/abs/2004.03805) (Tewari et al., Eurographics 2020)
+[State of the Art on Neural Rendering](https://arxiv.org/abs/2004.03805) (Tewari et al., EUROGRAPHICS 2020)
 
-[NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis](https://arxiv.org/abs/2003.08934) (Mildenhall et al., ECCV 2020)
+[Neural Fields in Visual Computing and Beyond](https://neuralfields.cs.brown.edu/) (Xie et al., EUROGRAPHICS 2022)
 
-- [Website](https://www.matthewtancik.com/nerf)
+[NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis](https://www.matthewtancik.com/nerf) (Mildenhall et al., ECCV 2020)
+
+[Fourier Features Let Networks Learn High Frequency Functions in Low Dimensional Domains](https://bmild.github.io/fourfeat/) (Tancik et al., NeurIPS 2020)
+
+[Learned Initializations for Optimizing Coordinate-Based Neural Representations](https://www.matthewtancik.com/learnit) (Tancik et al., CVPR 2021)
+
+[pixelNeRF: Neural Radiance Fields from One or Few Images](https://alexyu.net/pixelnerf/) (Yu et al., CVPR 2021)
+
+[AutoInt: Automatic Integration for Fast Neural Volume Rendering](https://arxiv.org/abs/2012.01714) (Lindell et al., CVPR 2021)
+
+[DONeRF: Towards Real-Time Rendering of Compact Neural Radiance Fields using Depth Oracle Networks](https://depthoraclenerf.github.io/) (Neff et al., EGSR 2021)
+
+[Putting NeRF on a Diet: Semantically Consistent Few-Shot View Synthesis](https://ajayj.com/dietnerf/) (Jain et al., ICCV 2021)
+
+[Plenoxels: Radiance Fields without Neural Networks](https://alexyu.net/plenoxels/) (Yu et al., CVPR 2022)
+
+[Direct Voxel Grid Optimization: Super-fast Convergence for Radiance Fields Reconstruction](https://sunset1995.github.io/dvgo/) (Sun et al., CVPR 2022)
+
+[Improved Direct Voxel Grid Optimization for Radiance Fields Reconstruction](https://arxiv.org/abs/2206.05085) (Sun et al., 2022)
+
+[TensoRF: Tensorial Radiance Fields](https://apchenstu.github.io/TensoRF/) (Chen et al., ECCV 2022)
+
+[FastNeRF: High-Fidelity Neural Rendering at 200FPS](https://arxiv.org/abs/2103.10380) (Garbin et al., ICCV 2021)
+
+[Instant Neural Graphics Primitives with a Multiresolution Hash Encoding](https://nvlabs.github.io/instant-ngp/) (Müller et al., SIGGRAPH 2022)
+
+[Variable Bitrate Neural Fields](https://nv-tlabs.github.io/vqad/) (Takikawa et al., SIGGRAPH 2022)
 
 [DeepSDF: Learning Continuous Signed Distance Functions for Shape Representation](https://arxiv.org/abs/1901.05103) (Park et al., CVPR 2019)
 
-[Fourier Features Let Networks Learn High Frequency Functions in Low Dimensional Domains](https://bmild.github.io/fourfeat/) (Tancik, NeurIPS 2020)
+[Real-time Neural Radiance Caching for Path Tracing](https://research.nvidia.com/publication/2021-06_real-time-neural-radiance-caching-path-tracing) (Müller et al., SIGGRAPH 2021)
 
-[Neural Sparse Voxel Fields](https://arxiv.org/abs/2007.11571) (Liu et al., NeurIPS 2020)
+[ShapeNet: An Information-Rich 3D Model Repository](https://shapenet.org/) (Chang et al., 2015)
 
-- [Website](https://lingjie0206.github.io/papers/NSVF/)
+[MonoSDF: Exploring Monocular Geometric Cues for Neural Implicit Surface Reconstruction](https://niujinshuchong.github.io/monosdf/) (Yu et al., NeurIPS 2022)
 
-[AutoRF: Learning 3D Object Radiance Fields from Single View Observations](https://arxiv.org/abs/2204.03593) (Muller et al., CVPR 2022)
+[Volume Rendering of Neural Implicit Surfaces](https://lioryariv.github.io/volsdf/) (Yariv et al., NeurIPS 2021)
 
-- [Website](https://sirwyver.github.io/AutoRF/)
+[NeuS: Learning Neural Implicit Surfaces by Volume Rendering for Multi-view Reconstruction](https://lingjie0206.github.io/papers/NeuS/) (Wang et al., NeurIPS 2021)
+
+### Websites
 
 **Frank Dellaert's Blog Posts**
 
 - [NeRF at CVPR 2022](https://dellaert.github.io/NeRF22/)
-
 - [NeRF at ICCV 2021](https://dellaert.github.io/NeRF21/)
-
 - [NeRF Explosion 2020](https://dellaert.github.io/NeRF/)
 
-**Other**
+**GitHub Repositories**
 
-[Awesome Neural Radiance Fields](https://github.com/yenchenlin/awesome-NeRF) (GitHub Repo)
+- [NVIDIA Kaolin Wisp](https://github.com/NVIDIAGameWorks/kaolin-wisp)
+- [Awesome Neural Radiance Fields](https://github.com/yenchenlin/awesome-NeRF)
