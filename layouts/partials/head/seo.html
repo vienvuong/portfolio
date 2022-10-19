@@ -12,31 +12,55 @@
 {{ end }}
 
 
+<!-- 
 <title>
   {{- if not .IsHome -}}
-    {{- with .Title }}{{ . }}{{ end -}}
-  {{- else -}}
-    {{- .Site.Title -}}
-    {{- with .Site.Params.Subtitle }}
-      —
-      {{ . -}}
-    {{- end -}}
+  {{- with .Title }}{{ . }}{{ end -}}
+{{- else -}}
+  {{- .Site.Title -}}
+  {{- with .Site.Params.Subtitle }}
+    —
+    {{ . -}}
   {{- end -}}
+{{- end -}}
 </title>
 
 <meta
   name="description"
   content="
   {{- with .Description -}}
+  {{- . -}}
+{{- else -}}
+  {{- with .Summary | plainify -}}
     {{- . -}}
   {{- else -}}
-    {{- with .Summary | plainify -}}
-      {{- . -}}
-    {{- else -}}
-      {{- .Site.Params.description -}}
-    {{- end -}}
-  {{- end -}}"
-/>
+    {{- .Site.Params.description -}}
+  {{- end -}}
+{{- end -}}"
+/> -->
+
+{{ $paginator := .Paginate (where .Site.RegularPages ".Params.post" "!=" false) }}
+
+{{ if .IsHome }}
+  {{ if eq $paginator.PageNumber 1 }}
+    <title>{{ .Title }}</title>
+    <meta name="description" content="{{ .Site.Params.description }}" />
+  {{ else }}
+    <title>{{ .Title }} | Page {{ $paginator.PageNumber }}</title>
+    <meta
+      name="description"
+      content="This is page {{ $paginator.PageNumber }} of our content."
+    />
+  {{ end }}
+{{ else }}
+  {{ if .Params.seoTitle }}
+    <title>{{ .Params.seoTitle }}</title>
+  {{ else }}
+    <title>{{ .Title }}</title>
+  {{ end }}
+  <meta name="description" content="{{ .Description }}" />
+{{ end }}
+
 
 <link rel="canonical" href="{{ .Permalink }}" />
 

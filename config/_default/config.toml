@@ -30,7 +30,7 @@ enableRobotsTXT = true
   #themeContrast = "medium"
   author = "Vien Vuong"
   subtitle = ""
-  description = "My personal blog and portfolio."
+  description = "Vien Vuong's blog of interesting tidbits in machine learning and 3D object reconstruction."
 
   [params.logo]
     text = "vien"
